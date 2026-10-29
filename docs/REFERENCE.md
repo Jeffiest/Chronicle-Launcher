@@ -23,4 +23,5 @@ Last studied: OpenRAC `main` at `93ac558` (2026-10-29).
 
 Everything Ratchet & Clank's own: the save editor, Enhanced graphics, the Godot level editor, PCSX2 card import,
 multiplayer, the game tiles and their orange. Our home is the Chronicle's two chapter covers instead of a game
-list, and our colours are DC_Web's night and gold.
+list, and our look is the games' own: the Chronicle logo's sky and gold, the ports' icon, and the port's Blue
+Stone, Paper and plate materials (PLAN.md §2).

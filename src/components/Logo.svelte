@@ -1,28 +1,17 @@
-<!-- The crescent: The Moon People's ports and MoonFactory's mods. With `name`, "Chronicle" in the heading face beside
-     it. Drawn in the current colour. -->
+<!-- The Chronicle logo: the sky in its letters, the gold trim, the two moons. The Moon People's, from the
+     Chronicle README. -->
 <script lang="ts">
-  let { size = 26, name = true }: { size?: number; name?: boolean } = $props();
+  import logo from "../assets/chronicle-logo.webp";
+
+  let { height = 40 }: { height?: number } = $props();
 </script>
 
-<span class="logo" aria-label="Chronicle Launcher">
-  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M15.5 2.6A10 10 0 1 0 21.4 15 8 8 0 0 1 15.5 2.6Z" fill="currentColor" />
-  </svg>
-  {#if name}<span class="name">Chronicle</span>{/if}
-</span>
+<img class="logo" src={logo} alt="Chronicle" style="height: {height}px" />
 
 <style>
   .logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--amber);
-  }
-  .name {
-    font-family: var(--font-head);
-    font-weight: 600;
-    font-size: 20px;
-    letter-spacing: 0.08em;
-    color: var(--gold);
+    display: block;
+    width: auto;
+    filter: drop-shadow(0 3px 6px var(--shadow));
   }
 </style>

@@ -15,11 +15,12 @@
 <div class="menu">
   <button aria-haspopup="menu" aria-expanded={open} onclick={() => (open = !open)} title="More">⋯</button>
   {#if open}
-    <div class="items" role="menu">
+    <div class="items stone" role="menu">
       {#each items as item (item.label)}
         <button
           role="menuitem"
           class:removes={item.removes}
+          class:plain={!item.removes}
           onclick={() => {
             open = false;
             item.run();
@@ -34,34 +35,30 @@
   .menu {
     position: relative;
   }
-  .menu > button {
-    padding: 10px 16px;
-  }
   .items {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 10px);
     left: 0;
-    z-index: 2;
-    min-width: 230px;
+    z-index: 4;
+    min-width: 240px;
     display: grid;
-    padding: 6px;
-    background: var(--panel-hi);
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-small);
+    gap: 6px;
+    padding: 10px;
   }
-  .items button {
-    border: 0;
-    border-radius: 6px;
+  .items .plain {
     background: none;
+    box-shadow: none;
+    text-align: left;
+    color: var(--on-stone);
+    padding: 8px 10px;
+  }
+  .items .removes {
+    margin-top: 6px;
     text-align: left;
   }
-  .removes {
-    color: var(--err);
-    border-top: 1px solid var(--line);
-  }
   @media (hover: hover) {
-    .items button:hover {
-      background: var(--panel);
+    .items .plain:hover {
+      background: var(--stone-lo);
     }
   }
 </style>

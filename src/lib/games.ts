@@ -13,7 +13,8 @@ export function chapterName(chapter: number): string {
   return `Chapter ${ROMAN[chapter] ?? chapter}`;
 }
 
-/** The theme class a game's page and cover wear (app.css: --dc1-*, --dc2-*). */
-export function themeClass(chapter: number): string {
-  return `dc${chapter}`;
+/** The game's own window a chapter wears (app.css `.stone`, `.paper`): Dark Cloud's Blue Stone menus, Dark
+ * Chronicle's parchment. */
+export function material(chapter: number): "stone" | "paper" {
+  return chapter === 1 ? "stone" : "paper";
 }

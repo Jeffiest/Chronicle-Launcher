@@ -57,13 +57,14 @@ reads like it:
   side, *Chapter I: Dark Cloud* and *Chapter II: Dark Chronicle*, each with its
   backdrop, its state in a few words ("Ready to play", "Needs your disc"), and the
   last time played. A game page opens like turning to that chapter.
-- **The moon is the through-line.** The Moon People made the ports; MoonFactory
-  makes the mods. Progress (extraction, checks) is a **moon waxing** from a thin
-  crescent to full, not a bar. The logo is a crescent. The Mods tab is called
-  **Moon Factory** and wears the moon accent.
-- **Each chapter has its own world.** Dark Cloud's page is night over Norune:
-  indigo, starlight, gold. Dark Chronicle's is Palm Brinks at dusk: sepia, brass,
-  warm light. Same layout, different light.
+- **The two moons are the through-line.** The Chronicle logo and the ports' icon
+  both show a gold moon and a blue moon over purple clouds. The logo heads the home
+  page; the icon is the app's icon. Set-up progress can be the gold moon rising.
+  The Mods tab is called **Moon Factory**.
+- **It wears the games' own materials.** Windows are the game's Blue Stone and
+  Paper; buttons are its stone plates. Dark Cloud's cover is Blue Stone, Dark
+  Chronicle's is Paper (chosen by us: the Chronicle Two port has no menu
+  materials of its own yet). Both are framed in the logo's gold.
 - **Saves read like the game's own save screen**: the hero (Toan, or Max and
   Monica), where they are, play time, the date, instead of slot numbers and bytes.
   Chronicle's `saves/<n>/save.dat` and ChronicleTwo's JSON saves (`dc2Ver4`
@@ -75,56 +76,42 @@ reads like it:
   `--screenshot`, per town), a Dark Chronicle "Scoop" photo album, decomp
   progress shown as a chapter's pages filling in (decomp.dev).
 
-## 2. The look: dark, moonlit, gold
+## 2. The look: the logo's sky, the game's stone and paper
 
-Keep in step with what we already made. **DC_Web** (`port/web/site/index.html`)
-set the palette: near-black ink, a slightly lifted panel, soft white text, and
-**Dark Cloud gold** for the one main action. MoonMod's tools use the same family
-(`#1c1c24` canvas, `#aaaabb` labels). The launcher follows the reference's *structure rules*
-(its `docs/STYLE.md`: one main action per page in a fixed place, rows not
-boxes, secondary actions in a menu, removing in `--err`) and swaps its *colours*.
+"Dark Cloud" is the game's name, not a mood. The look comes from the games
+themselves and from what The Moon People already made:
 
-`src/app.css` on `:root`, OpenRAC token → Chronicle value:
+- **The Chronicle logo** (Chronicle README): letters filled with sky (royal blue
+  through lavender to haze), ornate gold trim with bronze shading, a gold moon and
+  a blue moon.
+- **The ports' icon** (`port/icon/chronicle-512.png`, the same in both ports): the
+  two moons over brushed purple clouds.
+- **The port's menu materials** (Chronicle `port/src/ui/framework/surfaces.cpp`,
+  `buttons.cpp`): Blue Stone and Paper windows, and the Amber Gold, Slate Blue,
+  Terracotta and Stone Green plates, each with its base, rim and lettering colours.
+- **The port's fonts** (Chronicle `tools/font/`): Chronicle Title, the title menu's
+  lettering, and Chronicle Sharp, Dark Cloud's dialogue letters.
 
-| Token | OpenRAC (reference) | Chronicle | Source / use |
-| --- | --- | --- | --- |
-| `--ink` | `#181820` | `#0d0d12` | DC_Web `--bg`: the page |
-| `--ink-deep` | `#12121a` | `#08080c` | inputs, job output |
-| `--panel` | `#1d1d28` | `#17171f` | DC_Web `--panel` |
-| `--panel-hi` | `#22222f` | `#1f1f2a` | cards in panels; DC_Web's secondary button is `#2a2a33` |
-| `--brand` | `#d58a00` | `#a8842f` | section numbers, the selected job |
-| `--amber` | `#ffb443` | `#c9a24a` | DC_Web `--accent`: links, focus rings, blockers |
-| `--gold` | `#ffd08a` | `#e6cf8f` | headings |
-| `--lav`, `--soft`, `--dim` | blue-lavender | `#c9c9d6`, `#aaaabb`, `#8a8a96` | DC_Web `--dim`, MoonMod's label grey |
-| `--text`, `--body` | `#e8f0ff`, `#c3cdea` | `#e6e6ea`, `#c8c8d0` | DC_Web `--fg` |
-| `--bar-top`, `--bar-bottom` | orange | `#d4b05a`, `#b38a32` | primary buttons: gold, not orange. The header stays night-dark with a gold rule |
-| `--bar-ink` | `#2a1800` | `#111111` | text on gold (DC_Web buttons use `#111`) |
-| `--ok`, `--warn`, `--err` | | `#8fd694`, `--amber`, `#ff8a7a` | unchanged |
+| Part | Comes from | Tokens (`src/app.css`) |
+| --- | --- | --- |
+| Page | the logo's sky, with the icon's clouds below it | `--sky-*`, `--cloud-*` |
+| Headings | Chronicle Title in the logo's gold, bronze edge | `--gold-*`, `--bronze*`, `.gold-text` |
+| Windows | Blue Stone `rgb(78 92 116)` / rim `rgb(22 28 40)`; Paper `rgb(160 128 90)` / rim `rgb(58 44 28)` | `.stone`, `.paper` |
+| Main button | Amber Gold plate `rgb(218 158 74)`, recessed lettering `rgb(82 52 16)` | `button.primary` |
+| Other buttons | Slate Blue plate `rgb(62 94 166)`, lettering `rgb(172 196 250)` | `button` |
+| Removing | Terracotta plate `rgb(214 114 60)` | `button.removes` |
+| Ready | Stone Green lettering `rgb(172 240 216)` | `.state.ok` |
+| Game's voice (states, heroes) | Chronicle Sharp | `--font-game` |
+| Body text | Inter | `--font-sans` |
 
-A **moon** accent ties it to The Moon People and MoonFactory: `--moon: #b9c4e6`
-(a cool pale blue), used only for MoonMod things: the Mods tab's mark, the
-"MoonMod" badge on a mod row, the Mods switch under Play.
+The reference's structure rules still apply: one main action per page in a fixed
+place, secondary actions in a menu, removing last, colours only as tokens, hovers
+only under `@media (hover: hover)`.
 
-Per-game colours (`src/lib/themes.ts`, same shape as OpenRAC's `--box`, `--bd`,
-`--from`, `--to`, `--tx`):
-
-- **Dark Cloud**: night indigo to black (`#1b1f3a → #0d0d12`), gold border. The
-  Dark Genie's night over Norune.
-- **Dark Chronicle**: warm sepia to dusk (`#3a2a1b → #0d0d12`), brass border. The
-  Moon Flower/Palm Brinks storybook tone.
-
-Type: **Cinzel** (headings, game titles: a storybook serif, fits both games' title
-cards), **Inter** (body, as OpenRAC), system monospace (paths, logs). Bundle from
-npm (`@fontsource/cinzel`, `@fontsource-variable/inter`); nothing loads from the
-network. Dark only, as DC_Web is.
-
-Logo: a crescent-moon mark plus "Chronicle" in Cinzel, drawn as SVG in
-`Logo.svelte`. Ask TheMoonPeople whether we may
-use the Chronicle README logo (`i.imgur.com/pCMkgRM.png`) before using it.
-Game pictures (`public/img/<id>-bg.webp`): stills from our own play (the port's
-`--screenshot`), each credited in `THIRD_PARTY_NOTICES.md`.
-
-Write all of this into our own `docs/STYLE.md` in phase 1.
+Still to do in phase 1: backgrounds from our own play (the port's
+`--screenshot`) behind each chapter, the gold moon as the progress indicator, and
+`docs/STYLE.md`. The logo, icon and fonts are The Moon People's
+(`THIRD_PARTY_NOTICES.md`); confirm with them before a release.
 
 ## 3. How the launcher drives each game
 
@@ -242,7 +229,7 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 | # | Deliverable | Done when |
 | --- | --- | --- |
 | 0 | Our own skeleton: Tauri 2 + Svelte 5 + Rust core, the two games as data, the Chronicle home and a game page with **Get the game** / **Choose a build**, tokens and style tests, CI | `yarn verify` and `cargo test` pass; CI builds the app; the page opens in a browser with mock data |
-| 1 | The look: tokens, Cinzel/Inter, logo, two game themes, `docs/STYLE.md`, stylesheet tests | screenshots of the Library and a game page reviewed |
+| 1 | The look: the games' materials, fonts, logo and icon (started), backgrounds from our play, the gold-moon progress, `docs/STYLE.md` | screenshots of the Library and a game page reviewed |
 | 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build | a PAL and an NTSC 1.02 disc each go from folder to playing |
 | 3 | MoonMod: discover, enable, settings, install from zip/link, bundled mods, Mods switch | every bundled mod toggles in the launcher and the in-game manager agrees |
 | 4 | Dark Chronicle: `dc2data` set-up and check, play, saves, MoonMod on `chronicle-two` | a PAL disc goes from folder to playing with a mod on |
@@ -268,7 +255,8 @@ Open:
 
 1. **Licensing of the ports**: may we redistribute Chronicle/ChronicleTwo builds?
    (Needed before phase 5.)
-2. **Logo**: use the Chronicle README logo, or our own moon mark?
+2. **Logo, icon and fonts**: the launcher now uses The Moon People's (the Chronicle
+   logo, the ports' icon, Chronicle Title and Chronicle Sharp). OK to keep for a release?
 3. **License**: GPL-3.0-or-later is recommended. It matches the reference, so we
    can adapt its pieces (CHD reader, disc detection) with their notices. MIT would
    mean writing those from scratch.

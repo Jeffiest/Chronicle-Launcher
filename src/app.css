@@ -1,64 +1,110 @@
 /* Chronicle Launcher's look: docs/STYLE.md. Every colour is a token here, on :root, and nowhere else
-   (src/lib/stylesheets.test.ts). The palette is DC_Web's: near-black ink, a lifted panel, soft white text, Dark
-   Cloud gold for the one main action, and a pale moon blue for what belongs to MoonMod. */
+   (src/lib/stylesheets.test.ts). The colours are the games' own:
+   - the sky, the gold trim and the two moons of the Chronicle logo;
+   - the purple brush clouds of the ports' icon (port/icon/chronicle-512.png);
+   - the port's menu materials, Blue Stone and Paper windows and the Amber Gold, Slate Blue, Terracotta and
+     Stone Green plates (Chronicle port/src/ui/framework/surfaces.cpp and buttons.cpp, their base and rim values). */
+
+@font-face {
+  font-family: "Chronicle Title";
+  src: url("./assets/fonts/ChronicleTitle-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Chronicle Sharp";
+  src: url("./assets/fonts/ChronicleSharp-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: block;
+}
 
 :root {
   color-scheme: dark;
 
-  --ink: #0d0d12;
-  --ink-deep: #08080c;
-  --panel: #17171f;
-  --panel-hi: #1f1f2a;
+  /* The logo's sky, inside its letters: royal blue to lavender to haze. */
+  --sky-high: #23308c;
+  --sky: #3a48c4;
+  --sky-mid: #6f6fe0;
+  --sky-low: #a19ffb;
+  --sky-haze: #e4e4fc;
 
-  --brand: #a8842f;
-  --amber: #c9a24a;
-  --gold: #e6cf8f;
-  --moon: #b9c4e6;
+  /* The icon's clouds. */
+  --cloud-deep: #240c3c;
+  --cloud: #3c2454;
+  --cloud-hi: #543c6c;
+  --cloud-grey: #6c6c9c;
 
-  --text: #e6e6ea;
-  --body: #c8c8d0;
-  --lav: #c9c9d6;
-  --soft: #aaaabb;
-  --dim: #8a8a96;
+  /* The two moons. */
+  --moon-gold: #face77;
+  --moon-pale: #e4cc9c;
+  --moon-blue: #4697dd;
 
-  --line: rgb(170 170 187 / 0.18);
-  --line-strong: rgb(170 170 187 / 0.32);
+  /* The logo's gold trim. */
+  --gold-hi: #fce49c;
+  --gold: #fccc6c;
+  --gold-mid: #b46c0c;
+  --bronze: #843c0c;
+  --bronze-deep: #54240c;
 
-  --bar-top: #d4b05a;
-  --bar-bottom: #b38a32;
-  --bar-ink: #111111;
+  /* Blue Stone window: base rgb(78 92 116), rim rgb(22 28 40). */
+  --stone: #4e5c74;
+  --stone-hi: #6c7f9e;
+  --stone-lo: #3a4558;
+  --stone-rim: #161c28;
+  --on-stone: #eef1f8;
+  --on-stone-soft: #c3cbdc;
+  --on-stone-dim: #9aa5bc;
 
-  --ok: #8fd694;
-  --warn: var(--amber);
-  --err: #ff8a7a;
+  /* Paper window: base rgb(160 128 90), rim rgb(58 44 28). */
+  --paper: #a0805a;
+  --paper-hi: #c4a57c;
+  --paper-lo: #8a6c4a;
+  --paper-rim: #3a2c1c;
+  --ink: #2a1c0e;
+  --ink-soft: #4a3520;
 
-  --shade: rgb(8 8 12 / 0.72);
-  --star: rgb(230 230 234 / 0.75);
-  --star-faint: rgb(230 230 234 / 0.35);
+  /* Plates: face, rim, recessed (dark) lettering, painted (light) lettering. */
+  --amber: #da9e4a;
+  --amber-hi: #f0c272;
+  --amber-rim: #4e3414;
+  --amber-ink: #523410;
+  --amber-light: #ffe29c;
+  --slate: #3e5ea6;
+  --slate-hi: #5a7cc4;
+  --slate-rim: #122048;
+  --slate-light: #acc4fa;
+  --terracotta: #d6723c;
+  --terracotta-hi: #ea935c;
+  --terracotta-rim: #4a2210;
+  --terracotta-light: #feb888;
+  --green: #5cb094;
+  --green-rim: #1c4438;
+  --green-light: #acf0d8;
 
-  /* Chapter I, Dark Cloud: night over Norune. Chapter II, Dark Chronicle: Palm Brinks at dusk. */
-  --dc1-from: #1b1f3a;
-  --dc1-to: #0d0d12;
-  --dc1-glow: rgb(185 196 230 / 0.16);
-  --dc1-border: #c9a24a;
-  --dc2-from: #3a2a1b;
-  --dc2-to: #0d0d12;
-  --dc2-glow: rgb(230 170 90 / 0.18);
-  --dc2-border: #b8925a;
+  --shadow: rgb(16 8 32 / 0.45);
+  --bevel-light: rgb(255 255 255 / 0.28);
+  --bevel-dark: rgb(0 0 0 / 0.32);
+  --veil: rgb(36 12 60 / 0.55);
 
-  --font-head: "Cinzel", Georgia, serif;
+  /* A fine grain for stone and paper, as the port's procedural plates have. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --font-title: "Chronicle Title", Georgia, serif;
+  --font-game: "Chronicle Sharp", "Inter Variable", sans-serif;
   --font-sans: "Inter Variable", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
 
-  --radius: 14px;
-  --radius-small: 8px;
+  --radius: 12px;
+  --radius-plate: 7px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --fast: 120ms;
   --medium: 240ms;
   --slow: 480ms;
   --page-x: clamp(16px, 4vw, 48px);
   --page-top: 28px;
-  --page-gap: 24px;
+  --page-gap: 22px;
 }
 
 * {
@@ -67,13 +113,17 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
 }
 
+/* The page is the logo's sky, darkening upward. */
 body {
-  background: var(--ink);
-  color: var(--text);
+  background:
+    radial-gradient(120% 60% at 50% 110%, var(--sky-low), transparent 70%),
+    linear-gradient(180deg, var(--sky-high), var(--sky) 45%, var(--sky-mid));
+  background-attachment: fixed;
+  color: var(--on-stone);
   font: 15px/1.5 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -81,90 +131,151 @@ body {
 h1,
 h2,
 h3 {
-  font-family: var(--font-head);
-  color: var(--gold);
-  font-weight: 600;
-  letter-spacing: 0.02em;
   margin: 0;
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 p {
   margin: 0;
-  color: var(--body);
 }
 
 a {
-  color: var(--amber);
+  color: var(--gold);
 }
 
 :focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app > main {
+  flex: 1;
 }
 
 code,
 .mono {
   font-family: var(--font-mono);
-  font-size: 0.92em;
+  font-size: 0.9em;
 }
 
-/* Buttons: the one main action is gold; everything else is quiet. */
+/* Gold lettering, as the logo's trim: a bright top, a deep base, a bronze edge. */
+.gold-text {
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 45%, var(--gold-mid) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 var(--bronze-deep)) drop-shadow(0 3px 6px var(--shadow));
+}
+
+/* A Blue Stone window: grain over a top-lit face, a bevel, a dark rim. */
+.stone {
+  background:
+    var(--grain), var(--mottle), linear-gradient(180deg, var(--stone-hi), var(--stone) 40%, var(--stone-lo));
+  background-blend-mode: overlay, overlay, normal;
+  color: var(--on-stone);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 2px 2px 0 var(--bevel-light),
+    inset -2px -2px 0 var(--bevel-dark),
+    0 0 0 2px var(--stone-rim),
+    0 10px 24px var(--shadow);
+}
+
+/* A Paper window: parchment with dark ink. */
+.paper {
+  background:
+    var(--grain), var(--mottle), linear-gradient(180deg, var(--paper-hi), var(--paper) 50%, var(--paper-lo));
+  background-blend-mode: overlay, overlay, normal;
+  color: var(--ink);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 2px 2px 0 var(--bevel-light),
+    inset -2px -2px 0 var(--bevel-dark),
+    0 0 0 2px var(--paper-rim),
+    0 10px 24px var(--shadow);
+}
+
+/* Buttons are the game's plates: Slate Blue by default, Amber Gold for the one main action, Terracotta for what
+   removes. */
 button {
-  font: inherit;
-  color: var(--text);
-  background: var(--panel-hi);
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  padding: 8px 16px;
+  --face: var(--slate);
+  --face-hi: var(--slate-hi);
+  --rim: var(--slate-rim);
+  font: 600 14px/1 var(--font-sans);
+  color: var(--slate-light);
+  background: var(--grain), linear-gradient(180deg, var(--face-hi), var(--face) 55%);
+  background-blend-mode: overlay, normal;
+  border: 0;
+  border-radius: var(--radius-plate);
+  padding: 10px 18px;
   cursor: pointer;
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -2px 0 var(--bevel-dark),
+    0 0 0 2px var(--rim),
+    0 3px 0 2px var(--rim);
+  text-shadow: 0 1px 0 var(--bevel-dark);
   transition:
-    background var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+    filter var(--fast) var(--ease),
+    transform var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
 }
 
 button:active {
-  transform: translateY(1px);
+  transform: translateY(2px);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-dark),
+    0 0 0 2px var(--rim),
+    0 1px 0 2px var(--rim);
 }
 
 button:disabled {
   cursor: default;
-  opacity: 0.55;
+  filter: saturate(0.35) brightness(0.85);
 }
 
 button.primary {
-  background: linear-gradient(var(--bar-top), var(--bar-bottom));
-  color: var(--bar-ink);
-  border-color: transparent;
-  font-weight: 600;
-  padding: 11px 26px;
-  font-size: 16px;
+  --face: var(--amber);
+  --face-hi: var(--amber-hi);
+  --rim: var(--amber-rim);
+  color: var(--amber-ink);
+  font: 700 18px/1 var(--font-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 13px 30px 12px;
+  text-shadow: 0 1px 0 var(--amber-light);
+}
+
+button.removes {
+  --face: var(--terracotta);
+  --face-hi: var(--terracotta-hi);
+  --rim: var(--terracotta-rim);
+  color: var(--terracotta-light);
 }
 
 button.link {
   background: none;
-  border: 0;
+  box-shadow: none;
   padding: 4px 0;
-  color: var(--amber);
+  color: var(--gold-hi);
+  text-shadow: 0 1px 2px var(--shadow);
 }
 
 @media (hover: hover) {
   button:not(:disabled):hover {
-    border-color: var(--amber);
-  }
-  button.primary:not(:disabled):hover {
-    filter: brightness(1.08);
+    filter: brightness(1.12);
   }
   button.link:hover {
     text-decoration: underline;
   }
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px 20px;
 }
 
 /* A state: a dot and a few words. */
@@ -172,27 +283,30 @@ button.link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--soft);
+  font-family: var(--font-game);
+  letter-spacing: 0.02em;
+  color: var(--on-stone-soft);
 }
 
 .state::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 6px currentColor;
 }
 
 .state.ok {
-  color: var(--ok);
+  color: var(--green-light);
 }
 
 .state.warn {
-  color: var(--warn);
+  color: var(--gold-hi);
 }
 
 .state.err {
-  color: var(--err);
+  color: var(--terracotta-light);
 }
 
 /* A task done in steps, in order. */
@@ -206,11 +320,11 @@ ol.steps {
 ol.steps > li {
   counter-increment: step;
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   gap: 14px;
   align-items: center;
   padding: 14px 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--paper-lo);
 }
 
 ol.steps > li:first-child {
@@ -219,15 +333,14 @@ ol.steps > li:first-child {
 
 ol.steps > li::before {
   content: counter(step);
-  font-family: var(--font-head);
-  color: var(--brand);
-  font-size: 20px;
+  font: 700 24px/1 var(--font-title);
+  color: var(--bronze);
   text-align: center;
 }
 
 ol.steps > li.done::before {
   content: "✓";
-  color: var(--ok);
+  color: var(--green-rim);
 }
 
 .rise {
@@ -248,40 +361,4 @@ ol.steps > li.done::before {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
-}
-
-/* A chapter's backdrop, until there are pictures (public/img/<id>-bg.webp): Dark Cloud's night sky with its stars,
-   Dark Chronicle's warm dusk. */
-.backdrop {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.backdrop.dc1 {
-  --from: var(--dc1-from);
-  --to: var(--dc1-to);
-  --glow: var(--dc1-glow);
-  --border: var(--dc1-border);
-  background:
-    radial-gradient(1px 1px at 12% 22%, var(--star), transparent),
-    radial-gradient(1px 1px at 28% 64%, var(--star-faint), transparent),
-    radial-gradient(1.5px 1.5px at 41% 18%, var(--star), transparent),
-    radial-gradient(1px 1px at 57% 40%, var(--star-faint), transparent),
-    radial-gradient(1px 1px at 69% 12%, var(--star), transparent),
-    radial-gradient(1.5px 1.5px at 83% 33%, var(--star-faint), transparent),
-    radial-gradient(1px 1px at 91% 70%, var(--star), transparent),
-    radial-gradient(60% 50% at 78% 18%, var(--glow), transparent),
-    linear-gradient(160deg, var(--from), var(--to));
-}
-
-.backdrop.dc2 {
-  --from: var(--dc2-from);
-  --to: var(--dc2-to);
-  --glow: var(--dc2-glow);
-  --border: var(--dc2-border);
-  background:
-    radial-gradient(70% 55% at 20% 100%, var(--glow), transparent),
-    radial-gradient(40% 30% at 85% 15%, var(--glow), transparent),
-    linear-gradient(200deg, var(--from), var(--to));
 }

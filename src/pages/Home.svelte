@@ -1,19 +1,22 @@
-<!-- The Chronicle: the two games as its two chapters. -->
+<!-- The Chronicle: the logo under its two moons, and the two games as its two chapters. -->
 <script lang="ts">
+  import Clouds from "../components/Clouds.svelte";
   import Cover from "../components/Cover.svelte";
+  import Logo from "../components/Logo.svelte";
   import type { GameView } from "../lib/types";
 
   let { views, onOpen }: { views: GameView[]; onOpen: (id: string) => void } = $props();
 </script>
 
-<main class="page">
-  <section class="head rise">
-    <h1>The Chronicle</h1>
-    <p>Dark Cloud and Dark Chronicle on PC, from your own discs, with MoonMod.</p>
+<main>
+  <section class="sky">
+    <div class="logo rise"><Logo height={190} /></div>
+    <p class="tagline rise">Dark Cloud and Dark Chronicle on PC, from your own discs, with MoonMod.</p>
   </section>
+  <Clouds height={150} />
   <section class="covers">
     {#each views as view, i (view.game.id)}
-      <div class="rise" style="animation-delay: {80 + i * 80}ms">
+      <div class="rise" style="animation-delay: {100 + i * 90}ms">
         <Cover {view} onOpen={() => onOpen(view.game.id)} />
       </div>
     {/each}
@@ -21,23 +24,44 @@
 </main>
 
 <style>
-  .page {
-    padding: var(--page-top) var(--page-x) 48px;
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+  .sky {
     display: grid;
-    gap: var(--page-gap);
-    max-width: 1200px;
-    margin: 0 auto;
+    justify-items: center;
+    gap: 6px;
+    padding: 36px var(--page-x) 0;
+    text-align: center;
   }
-  .head h1 {
-    font-size: 30px;
-    margin-bottom: 4px;
+  .logo {
+    max-width: 100%;
   }
-  .head p {
-    color: var(--soft);
+  .logo :global(img) {
+    max-width: 100%;
+    height: auto !important;
+    width: min(560px, 90vw);
+  }
+  .tagline {
+    font-family: var(--font-game);
+    color: var(--sky-haze);
+    text-shadow: 0 1px 3px var(--cloud-deep);
+    font-size: 17px;
   }
   .covers {
+    flex: 1;
+    margin-top: -2px;
+    padding: 6px var(--page-x) 48px;
+    background: var(--cloud-deep);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    align-content: start;
+    gap: 24px;
+  }
+  .covers > div {
+    max-width: 560px;
+    width: 100%;
+    justify-self: center;
   }
 </style>

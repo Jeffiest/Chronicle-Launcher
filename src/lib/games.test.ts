@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GAMES, chapterName, themeClass } from "./games";
+import { GAMES, chapterName, material } from "./games";
 import { mockApi } from "./api";
 
 describe("games", () => {
@@ -8,10 +8,11 @@ describe("games", () => {
     expect(GAMES.map((g) => chapterName(g.chapter))).toEqual(["Chapter I", "Chapter II"]);
   });
 
-  it("each have a theme in app.css", async () => {
+  it("each wear one of the game's windows, defined in app.css", async () => {
     const { readFileSync } = await import("node:fs");
     const css = readFileSync(new URL("../app.css", import.meta.url), "utf8");
-    for (const game of GAMES) expect(css).toContain(`.backdrop.${themeClass(game.chapter)}`);
+    expect(GAMES.map((g) => material(g.chapter))).toEqual(["stone", "paper"]);
+    for (const game of GAMES) expect(css).toContain(`.${material(game.chapter)} {`);
   });
 
   it("go to GitHub for Get the game", () => {

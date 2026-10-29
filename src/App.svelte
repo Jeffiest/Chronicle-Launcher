@@ -38,7 +38,7 @@
   refresh();
 </script>
 
-<Header version={`v${version}`} onHome={() => (open = null)} />
+<Header version={`v${version}`} showLogo={current !== null} onHome={() => (open = null)} />
 
 {#if error}
   <p class="error" role="alert"><span class="state err">{error}</span></p>
@@ -59,7 +59,6 @@
 <style>
   .error {
     padding: 10px var(--page-x);
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
+    background: var(--cloud-deep);
   }
 </style>

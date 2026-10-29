@@ -1,7 +1,8 @@
 <!-- A chapter's page: its sky and name, the one next step, and the steps to get there. -->
 <script lang="ts">
+  import Clouds from "../components/Clouds.svelte";
   import Menu, { type Item } from "../components/Menu.svelte";
-  import { chapterName, themeClass } from "../lib/games";
+  import { chapterName, material } from "../lib/games";
   import { MAIN_BUTTON, stateOf } from "../lib/next";
   import type { GameView } from "../lib/types";
 
@@ -32,12 +33,12 @@
   ]);
 </script>
 
-<main>
-  <section class="band backdrop {themeClass(game.chapter)}">
+<main data-window={material(game.chapter)}>
+  <section class="band">
     <div class="inner">
       <button class="link back" onclick={onBack}>‹ The Chronicle</button>
       <span class="chapter">{chapterName(game.chapter)}</span>
-      <h1>{game.title}</h1>
+      <h1 class="gold-text">{game.title}</h1>
       <p class="hero">{game.hero}</p>
       <div class="actions">
         <button class="primary" disabled={waiting} onclick={onGet}>{MAIN_BUTTON[view.next]}</button>
@@ -45,16 +46,18 @@
           <button onclick={onChoose}>Choose a build</button>
         {/if}
         <Menu {items} />
-        <span class="state {state.tone}">{state.words}</span>
       </div>
-      {#if waiting}
-        <p class="note">Setting up from your disc arrives in the launcher's next update.</p>
-      {/if}
+      <p class="where">
+        <span class="state {state.tone}">{state.words}</span>
+        {#if waiting}<span class="note">Setting up from your disc arrives in the launcher's next update.</span
+          >{/if}
+      </p>
     </div>
   </section>
+  <Clouds height={110} />
 
   <section class="body">
-    <div class="panel rise">
+    <div class="paper steps-panel rise">
       <h2>Getting there</h2>
       <ol class="steps">
         <li class:done={view.build !== null}>
@@ -95,7 +98,7 @@
     </div>
 
     {#if view.build}
-      <details class="panel about rise">
+      <details class="stone about rise">
         <summary>About this build</summary>
         <p>Build: <code>{view.build.dir}</code></p>
         <p>Game data: <code>{view.data}</code></p>
@@ -106,75 +109,120 @@
 </main>
 
 <style>
-  .band {
-    border-bottom: 1px solid var(--line);
+  main {
+    display: flex;
+    flex-direction: column;
   }
   .inner {
     max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
-    padding: 18px var(--page-x) 34px;
+    padding: 16px var(--page-x) 8px;
     display: grid;
     gap: 6px;
     justify-items: start;
   }
   .back {
-    margin-bottom: 28px;
+    margin-bottom: 22px;
   }
   .chapter {
-    font-family: var(--font-head);
-    color: var(--border);
-    letter-spacing: 0.2em;
+    font: 700 15px/1 var(--font-title);
+    color: var(--gold-hi);
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    font-size: 13px;
+    text-shadow: 0 1px 3px var(--cloud-deep);
   }
   h1 {
-    font-size: clamp(34px, 5vw, 52px);
+    font-size: clamp(40px, 6vw, 64px);
     line-height: 1.05;
   }
   .hero {
-    color: var(--soft);
+    font-family: var(--font-game);
+    color: var(--sky-haze);
+    font-size: 17px;
+    text-shadow: 0 1px 3px var(--cloud-deep);
   }
   .actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    margin-top: 18px;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .where {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    align-items: center;
+    margin-top: 12px;
+    text-shadow: 0 1px 3px var(--cloud-deep);
+  }
+  .where .state.warn {
+    color: var(--gold-hi);
   }
   .note {
-    color: var(--dim);
+    color: var(--sky-haze);
     font-size: 13px;
   }
   .body {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: var(--page-top) var(--page-x) 48px;
+    flex: 1;
+    margin-top: -2px;
+    background: var(--cloud-deep);
+    width: 100%;
+    padding: 8px var(--page-x) 48px;
     display: grid;
     gap: var(--page-gap);
+    align-content: start;
   }
-  h2 {
-    font-size: 18px;
-    margin-bottom: 6px;
+  .body > * {
+    width: 100%;
+    max-width: calc(1200px - 2 * var(--page-x));
+    margin: 0 auto;
+  }
+  .steps-panel {
+    padding: 20px 24px 10px;
+  }
+  .steps-panel h2 {
+    font-size: 22px;
+    color: var(--bronze-deep);
+    margin-bottom: 4px;
+  }
+  strong {
+    font-family: var(--font-title);
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
   }
   .line {
-    color: var(--soft);
+    color: var(--ink-soft);
     font-size: 14px;
   }
-  .steps button {
+  .line code {
+    color: var(--ink);
+  }
+  .line .state.err {
+    color: var(--terracotta-rim);
+  }
+  .steps-panel button {
     white-space: nowrap;
   }
   .soon {
     white-space: nowrap;
-    color: var(--dim);
+    color: var(--ink-soft);
+    font-style: italic;
     font-size: 13px;
+  }
+  .about {
+    padding: 14px 20px;
   }
   .about summary {
     cursor: pointer;
-    color: var(--lav);
+    font-family: var(--font-title);
+    color: var(--gold-hi);
   }
   .about p {
     margin-top: 8px;
-    color: var(--soft);
+    color: var(--on-stone-soft);
     font-size: 13px;
     overflow-wrap: anywhere;
   }
