@@ -121,7 +121,11 @@
       <SavesPanel {view} />
       <details class="stone about rise">
         <summary>About this set-up</summary>
-        <p>Disc: <code>{fileName(view.set_up.disc)}</code>, {view.set_up.release ?? "release not listed"}</p>
+        <p>
+          Disc: <code>{fileName(view.set_up.disc)}</code>{view.set_up.release
+            ? `, ${view.set_up.release}`
+            : ""}
+        </p>
         <p>Set up: {when(view.set_up.finished)}</p>
         <p>Build: <code>{view.build?.dir ?? view.set_up.build}</code></p>
         <p>Game data: <code>{view.data}</code></p>

@@ -58,7 +58,7 @@ impl Stage {
     }
 }
 
-/// The release the extractor names (`release: NTSC 1.02`): its word is final, even for a disc the launcher's own
+/// The release the extractor names (`release: PAL prototype (July 12, 2001)`): its word is final, even for a disc the launcher's own
 /// table does not know.
 pub fn release_in_line(line: &str) -> Option<&str> {
     line.strip_prefix("release: ")
@@ -121,9 +121,9 @@ mod tests {
     #[test]
     fn stages_follow_the_extractors_output() {
         let output = [
-            "source: /d/Dark Cloud (NTSC).iso (ISO 9660 image)",
+            "source: /d/Dark Cloud (PAL).iso (ISO 9660 image)",
             "DATA.DAT: 1 bytes, DATA.HD2: 2 bytes",
-            "release: NTSC 1.02",
+            "release: PAL prototype (July 12, 2001)",
             "index: 10 records, 9 files, 100 bytes",
             "wrote 9 files (100 bytes), kept 0 already present",
             "verified 9/9 files in /data",
@@ -139,7 +139,10 @@ mod tests {
             ]
         );
         assert!(stages.windows(2).all(|w| w[0].fraction() < w[1].fraction()));
-        assert_eq!(output.iter().find_map(|l| release_in_line(l)), Some("NTSC 1.02"));
+        assert_eq!(
+            output.iter().find_map(|l| release_in_line(l)),
+            Some("PAL prototype (July 12, 2001)")
+        );
     }
 
     #[test]
@@ -151,7 +154,7 @@ mod tests {
         assert_eq!(read(&dirs), None);
         let done = SetUp {
             disc: "/d.iso".into(),
-            release: Some("NTSC 1.02".into()),
+            release: Some("PAL prototype (July 12, 2001)".into()),
             build: "/b".into(),
             finished: 1,
         };

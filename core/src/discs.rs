@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct FoundDisc {
     pub path: PathBuf,
-    /// The release's name, or `None` for one the extractor's table lacks (it still sets it up, by its layout).
+    /// The release's name. Only a release the game lists, and does not refuse, is found.
     pub release: Option<String>,
 }
 
@@ -67,17 +67,36 @@ pub fn identify(game: &Game, path: &Path) -> Result<FoundDisc, String> {
         Some(found) => return Err(format!("another game's disc (it boots {found})")),
         None => return Err("not a PlayStation 2 disc (SYSTEM.CNF names no program)".into()),
     }
-    let release = match game.index_file.as_deref() {
-        Some(name) => iso
-            .root_file(name)
-            .map_err(|e| e.to_string())?
-            .and_then(|index| release_of(&game.releases, &index).map(|r| r.name.clone())),
-        None => None,
+    let Some(index_file) = game.index_file.as_deref() else {
+        return Ok(FoundDisc {
+            path: path.to_path_buf(),
+            release: None,
+        });
     };
-    Ok(FoundDisc {
-        path: path.to_path_buf(),
-        release,
-    })
+    let index = iso
+        .root_file(index_file)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("not a {} disc the port reads (no {index_file})", game.title))?;
+    let accepted: Vec<&str> = game
+        .releases
+        .iter()
+        .filter(|r| r.refused.is_none())
+        .map(|r| r.name.as_str())
+        .collect();
+    match release_of(&game.releases, &index) {
+        Some(Release {
+            refused: Some(why), ..
+        }) => Err(why.clone()),
+        Some(release) => Ok(FoundDisc {
+            path: path.to_path_buf(),
+            release: Some(release.name.clone()),
+        }),
+        None => Err(format!(
+            "a release of {} the launcher does not know; it sets up {}",
+            game.title,
+            accepted.join(" or ")
+        )),
+    }
 }
 
 fn images(folder: &Path, depth: usize, out: &mut Vec<PathBuf>) {
@@ -127,7 +146,7 @@ mod tests {
     use crate::games;
     use crate::iso::tests::image;
 
-    const CNF: &[u8] = b"BOOT2 = cdrom0:\\SCUS_971.11;1\r\nVER = 1.02\r\nVMODE = NTSC\r\n";
+    const CNF: &[u8] = b"BOOT2 = cdrom0:\\SCUS_971.11;1\r\nVMODE = PAL\r\n";
 
     /// Dark Cloud with a release whose fingerprint is `index`'s, since a real disc's index cannot be in a test.
     fn dark_cloud_knowing(index: &[u8]) -> Game {
@@ -136,6 +155,7 @@ mod tests {
             name: "Test release".into(),
             index_size: index.len() as u64,
             index_fnv: format!("{:x}", fnv1a64(index)),
+            refused: None,
         });
         game
     }
@@ -170,15 +190,43 @@ mod tests {
     }
 
     #[test]
-    fn an_unknown_release_is_still_dark_cloud() {
+    fn an_unknown_release_is_not_set_up() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(
             dir.path().join("dc.iso"),
             image(&[("SYSTEM.CNF", CNF), ("DATA.HD2", &[1; 10])]),
         )
         .unwrap();
-        let disc = identify(games::find("chronicle").unwrap(), &dir.path().join("dc.iso")).unwrap();
-        assert_eq!(disc.release, None);
+        let err = identify(games::find("chronicle").unwrap(), &dir.path().join("dc.iso")).unwrap_err();
+        assert!(
+            err.contains("does not know") && err.contains("PAL prototype"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn the_ntsc_release_is_refused() {
+        let index = vec![9u8; 4000];
+        let mut game = dark_cloud_knowing(&index);
+        game.releases.last_mut().unwrap().refused = Some("the NTSC release".into());
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("dc.iso"),
+            image(&[("SYSTEM.CNF", CNF), ("DATA.HD2", &index)]),
+        )
+        .unwrap();
+        assert_eq!(
+            identify(&game, &dir.path().join("dc.iso")),
+            Err("the NTSC release".into())
+        );
+    }
+
+    #[test]
+    fn the_real_table_refuses_ntsc_and_takes_pal() {
+        let game = games::find("chronicle").unwrap();
+        let ntsc = game.releases.iter().find(|r| r.name == "NTSC 1.02").unwrap();
+        assert!(ntsc.refused.as_deref().unwrap().contains("PAL disc only"));
+        assert_eq!(game.releases.iter().filter(|r| r.refused.is_none()).count(), 1);
     }
 
     #[test]
@@ -186,7 +234,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let deep = dir.path().join("ps2/dark cloud");
         std::fs::create_dir_all(&deep).unwrap();
-        std::fs::write(deep.join("Dark Cloud (NTSC).iso"), image(&[("SYSTEM.CNF", CNF)])).unwrap();
+        let index = vec![5u8; 2000];
+        std::fs::write(
+            deep.join("Dark Cloud (PAL).iso"),
+            image(&[("SYSTEM.CNF", CNF), ("DATA.HD2", &index)]),
+        )
+        .unwrap();
         std::fs::write(
             dir.path().join("other.iso"),
             image(&[("SYSTEM.CNF", b"BOOT2 = cdrom0:\\SCES_511.90;1")]),
@@ -198,9 +251,9 @@ mod tests {
         std::fs::create_dir_all(&too_deep).unwrap();
         std::fs::write(too_deep.join("hidden.iso"), image(&[("SYSTEM.CNF", CNF)])).unwrap();
 
-        let scan = scan(games::find("chronicle").unwrap(), dir.path());
+        let scan = scan(&dark_cloud_knowing(&index), dir.path());
         assert_eq!(scan.discs.len(), 1);
-        assert!(scan.discs[0].path.ends_with("Dark Cloud (NTSC).iso"));
+        assert!(scan.discs[0].path.ends_with("Dark Cloud (PAL).iso"));
         let why: Vec<&str> = scan.skipped.iter().map(|s| s.why.as_str()).collect();
         assert_eq!(why.len(), 2, "{why:?}");
         assert!(why.iter().any(|w| w.contains("SCES_511.90")));

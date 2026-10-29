@@ -9,7 +9,7 @@ describe("format", () => {
   });
 
   it("names a file from either kind of path", () => {
-    expect(fileName("/home/t/Dark Cloud (NTSC).iso")).toBe("Dark Cloud (NTSC).iso");
+    expect(fileName("/home/t/Dark Cloud (PAL).iso")).toBe("Dark Cloud (PAL).iso");
     expect(fileName("C:\\Games\\dc.iso")).toBe("dc.iso");
   });
 

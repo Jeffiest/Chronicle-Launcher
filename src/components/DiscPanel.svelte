@@ -94,7 +94,7 @@
             <div>
               <strong>{fileName(disc.path)}</strong>
               <p class="soft">
-                {disc.release ?? "A release the extractor does not list; it sets it up by its layout"}
+                {disc.release}
               </p>
             </div>
             <button class="primary" onclick={() => begin(disc.path)}>Set up from this disc</button>

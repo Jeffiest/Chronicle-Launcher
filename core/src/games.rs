@@ -16,6 +16,9 @@ pub struct Release {
     pub index_size: u64,
     /// Hexadecimal, as `dcdata.hpp` writes it.
     pub index_fnv: String,
+    /// Why the launcher does not set this release up, when it does not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refused: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -87,7 +90,14 @@ mod tests {
     fn dark_cloud_names_its_releases() {
         let game = find("chronicle").unwrap();
         assert_eq!(game.boot.as_deref(), Some("SCUS_971.11"));
-        assert_eq!(game.releases.len(), 2);
+        let accepted: Vec<&str> = game
+            .releases
+            .iter()
+            .filter(|r| r.refused.is_none())
+            .map(|r| r.name.as_str())
+            .collect();
+        assert_eq!(accepted, ["PAL prototype (July 12, 2001)"]);
+        assert!(game.discs.iter().all(|d| d.region == "PAL"));
         for release in &game.releases {
             assert!(
                 u64::from_str_radix(&release.index_fnv, 16).is_ok(),

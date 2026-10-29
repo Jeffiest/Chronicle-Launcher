@@ -8,28 +8,20 @@
   "executable": "darkcloud",
   "extractor": "dcdata",
   "hero": "Toan",
-  "discs": [
-    {
-      "region": "PAL",
-      "file": "Dark Cloud (PAL).iso"
-    },
-    {
-      "region": "NTSC 1.02",
-      "file": "Dark Cloud (NTSC).iso"
-    }
-  ],
+  "discs": [{ "region": "PAL", "file": "Dark Cloud (PAL).iso" }],
   "boot": "SCUS_971.11",
   "index_file": "DATA.HD2",
   "releases": [
     {
-      "name": "NTSC 1.02",
-      "index_size": 294080,
-      "index_fnv": "806bb1d43be8a8dc"
-    },
-    {
       "name": "PAL prototype (July 12, 2001)",
       "index_size": 312864,
       "index_fnv": "5942a32563c2a8b1"
+    },
+    {
+      "name": "NTSC 1.02",
+      "index_size": 294080,
+      "index_fnv": "806bb1d43be8a8dc",
+      "refused": "the NTSC release: the launcher sets up the PAL disc only"
     }
   ]
 }

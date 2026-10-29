@@ -9,6 +9,7 @@ export interface Release {
   name: string;
   index_size: number;
   index_fnv: string;
+  refused?: string;
 }
 
 export interface Game {

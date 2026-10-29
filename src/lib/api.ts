@@ -145,9 +145,22 @@ export function mockApi(tick = 700): Api {
     const game = GAMES.find((g) => g.id === id)!;
     return game.boot
       ? {
-          discs: [{ path: `~/Games/PS2/${game.discs[0].file}`, release: game.releases?.[1]?.name ?? null }],
+          discs: [
+            {
+              path: `~/Games/PS2/${game.discs[0].file}`,
+              release: game.releases?.find((r) => !r.refused)?.name ?? null,
+            },
+          ],
           skipped: [
             { path: "~/Games/PS2/Other Game.iso", why: "another game's disc (it boots SLUS_123.45)" },
+            ...(id === "chronicle"
+              ? [
+                  {
+                    path: "~/Games/PS2/Dark Cloud (USA).iso",
+                    why: "the NTSC release: the launcher sets up the PAL disc only",
+                  },
+                ]
+              : []),
           ],
         }
       : { discs: [], skipped: [] };

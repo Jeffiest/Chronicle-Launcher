@@ -24,9 +24,9 @@ Phase 2 of [the plan](docs/PLAN.md), for Dark Cloud:
 
 - **Get the game** opens the port's GitHub (the launcher ships no builds yet); **Choose a build** remembers the
   folder with your build of the port, or your checkout of it.
-- **Your disc**: the launcher looks in a folder, two folders down, for an `.iso` that boots Dark Cloud
-  (`SCUS_971.11`), and names its release the way the port's extractor does. A `.chd` is pointed out, to be made an
-  image first.
+- **Your disc**: the launcher looks in a folder, two folders down, for an `.iso` of Dark Cloud's PAL release (the
+  July 12, 2001 prototype the port is built against), told the way the port's extractor tells it. NTSC discs, and
+  releases it does not know, are named and turned away. A `.chd` is pointed out, to be made an image first.
 - **Set up from your disc** runs the port's `dcdata extract`, the gold moon waxing as it goes, and can be cancelled.
 - **Play** starts `darkcloud` on the launcher's own data and save folders. A crash is kept on the page, with **Copy
   report** and **Save report** (home folder written `~`), until the game next closes cleanly.

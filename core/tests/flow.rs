@@ -21,9 +21,9 @@ fn set_up_then_play() {
         &build.path().join("dcdata"),
         r#"[ "$1" = extract ] || exit 2
 echo "source: $2 (ISO 9660 image)"
-echo "release: NTSC 1.02"
+echo "release: PAL prototype (July 12, 2001)"
 echo "index: 3 records, 3 files, 30 bytes"
-mkdir -p "$3" && echo '{"release":"NTSC 1.02","languages":[1]}' > "$3/languages.json"
+mkdir -p "$3" && echo '{"release":"PAL prototype (July 12, 2001)","languages":[2,3,4,5,6]}' > "$3/languages.json"
 echo "verified 3/3 files in $3""#,
     );
     script(
@@ -50,7 +50,7 @@ exit ${DC_TEST_EXIT:-0}"#,
     assert_eq!(stages.last(), Some(&setup::Stage::Preparing));
     let done = setup::SetUp {
         disc: "/discs/dc.iso".into(),
-        release: Some("NTSC 1.02".into()),
+        release: Some("PAL prototype (July 12, 2001)".into()),
         build: built.dir.clone(),
         finished: 1,
     };
