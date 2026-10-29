@@ -1,10 +1,13 @@
 # Chronicle Launcher: the plan
 
-A launcher for the Dark Cloud ports, built from the
-[OpenRAC launcher](https://github.com/OpenRAC/OpenRAC/tree/main/launcher). It
-sets a game up from your own disc, plays its native PC port, and manages
-[MoonMod](https://github.com/Jeffiest/MoonMod) (MoonFactory) mods. It never
-downloads, uploads or bundles anything from the games.
+A launcher for the Dark Cloud ports. It sets a game up from your own disc, plays
+its native PC port, and manages [MoonMod](https://github.com/Jeffiest/MoonMod)
+(MoonFactory) mods. It never downloads, uploads or bundles anything from the games.
+
+The [OpenRAC launcher](https://github.com/OpenRAC/OpenRAC/tree/main/launcher) is
+our **reference**, the way [OpenGOAL's launcher](https://github.com/open-goal/launcher)
+was OpenRAC's: we learn from how it works and what players liked, and we write our
+own launcher with its own Dark Cloud / Dark Chronicle character. It is not a fork.
 
 | Game | Port | Launcher id | Executable | Extractor | Discs |
 | --- | --- | --- | --- | --- | --- |
@@ -14,58 +17,76 @@ downloads, uploads or bundles anything from the games.
 The ids match MoonMod's manifest `games` enum (`chronicle`, `chronicle-two`), so a
 mod's `mod.json` says directly which game pages list it.
 
-## 1. What we take from OpenRAC, and what we leave
+## 1. What we learn from OpenRAC, and what is ours
 
-Base: OpenRAC `main` at `93ac558` (2026-10-29). It is Tauri 2: Rust does every
-file and process operation (`core/`, `src-tauri/`), Svelte 5 draws the UI
-(`src/`). It is GPL-3.0-or-later, so **this launcher is GPL-3.0-or-later too**,
-keeps OpenRAC's copyright notices on the files it carries, and lists them in
-`THIRD_PARTY_NOTICES.md`. Record the OpenRAC commit we last synced from in
-`UPSTREAM.md`, the way DC_Web records its Chronicle import.
+Same stack as the reference, because it fits: **Tauri 2**, Rust for every file and
+process operation (`core/`, `src-tauri/`), **Svelte 5** for the UI (`src/`). We
+write our own code. Where we do adapt a specific OpenRAC file (for example its CHD
+reader), that file keeps OpenRAC's GPL-3.0-or-later notice and is listed in
+`THIRD_PARTY_NOTICES.md`, so the launcher's license has to allow that (see §7).
+`docs/REFERENCE.md` records the OpenRAC commit we last studied (`93ac558`,
+2026-10-29) and what we took as an idea from it.
 
-**Keep (rename and re-point):**
+**Ideas we take from the reference** (players liked them; we rebuild them our way):
 
-- The shell: header bar, game list on the left, one page per game whose main
-  button names the next step (**Set up from your disc → Play**), a menu beside it
-  for the rarer actions, toasts, the jobs/progress stream (`jobs.rs`,
-  `JobProgress.svelte`), Tasks.
-- Disc finding (`discs.rs`, `detect.rs`, `chd.rs`): scan a folder two levels deep,
-  know a disc by its `SYSTEM.CNF`, accept `.chd`.
-- Install/remove set-up (`install.rs`, `reset.rs`): **Remove the set-up** keeps the
-  disc and the saves.
-- Saves list with backups and restore (`saves.rs`, `SaveManagerBlock.svelte`).
-- Crash notice, logs and **Copy report**/**Save report** with home paths shortened
-  (`reports.rs`, `CrashNotice.svelte`, `ReportsBlock.svelte`).
-- The Mods tab structure: overview of rows → a mod's own page with its settings
-  (`PluginsPanel.svelte`, `ModPage.svelte`, `ModSetting.svelte`, `AddMod.svelte`,
-  `remote.rs` for "add from a GitHub link").
-- Settings rows, switches, segmented controls, folded Advanced (`.setting`,
-  `details.more` in `app.css`), themes (`palettes.json`, `theme.rs`).
-- Self-update (`update.rs`, `UpdateModal.svelte`), Discord presence (`discord.rs`),
-  decomp progress band (`progress_sync.rs`, `ProgressBar.svelte`).
-- The stylesheet tests (`stylesheets.test.ts`: no hex outside `:root`, hovers only
-  in `@media (hover: hover)`) and the generated TS types from Rust (`ts-rs`).
+- One page per game whose main button always names the next step (**Get the
+  game → Set up from your disc → Play**), with a menu beside it for the rarer
+  actions and anything that removes set apart at the end.
+- Disc finding: scan a folder two levels deep, know a disc by its `SYSTEM.CNF`,
+  accept `.chd`. **Remove the set-up** keeps the disc and the saves.
+- Long jobs (extraction) stream progress into the page; a log for each run.
+- Saves with backups and restore; crash notice with **Copy report**/**Save
+  report**, home paths shortened to `~`.
+- Mods as an overview of rows → each mod's own page with its settings; install
+  from a zip, a folder or a GitHub link with a preview first.
+- Settings as rows (name left, control right), applied as they change; folded
+  Advanced.
+- Style rules as tests: no hex colour outside `:root`, hover styles only in
+  `@media (hover: hover)`, reduced motion respected. Rust types exported to TS.
 
-**Leave out (Ratchet & Clank only):** the RAC save editor and its field tables
-(planets, bolts, nanotech, gold bolts), Enhanced graphics and its light baking,
-the Godot level editor and asset packs (`editor_state.rs`, `EditorFlow.svelte`,
-`AssetsPanel.svelte`, `PacksPanel.svelte`), PCSX2 memory-card import, multiplayer,
-Android, the six RAC game themes and pictures, `actions.json`'s OpenRAC repository
-actions, and Luau plugin presets. Each can come back later as its Dark Cloud
-equivalent (see phase 6).
+**Ours, not the reference's:** Ratchet & Clank's save editor, Enhanced graphics,
+the Godot level editor, PCSX2 card import, multiplayer and Android have no place
+here. What replaces them is in §1a.
+
+## 1a. A Dark Cloud take
+
+The two games are told as **one chronicle in two chapters**, and the launcher
+reads like it:
+
+- **Home is the Chronicle.** Not a grid of tiles: two tall storybook covers side by
+  side, *Chapter I: Dark Cloud* and *Chapter II: Dark Chronicle*, each with its
+  backdrop, its state in a few words ("Ready to play", "Needs your disc"), and the
+  last time played. A game page opens like turning to that chapter.
+- **The moon is the through-line.** The Moon People made the ports; MoonFactory
+  makes the mods. Progress (extraction, checks) is a **moon waxing** from a thin
+  crescent to full, not a bar. The logo is a crescent. The Mods tab is called
+  **Moon Factory** and wears the moon accent.
+- **Each chapter has its own world.** Dark Cloud's page is night over Norune:
+  indigo, starlight, gold. Dark Chronicle's is Palm Brinks at dusk: sepia, brass,
+  warm light. Same layout, different light.
+- **Saves read like the game's own save screen**: the hero (Toan, or Max and
+  Monica), where they are, play time, the date, instead of slot numbers and bytes.
+  Chronicle's `saves/<n>/save.dat` and ChronicleTwo's JSON saves (`dc2Ver4`
+  header: `map_no`, `play_time`) give us these.
+- **Words stay plain where they act.** Buttons say exactly what they do (**Play**,
+  **Set up from your disc**); the flavour lives in headings, art and motion, so
+  nothing becomes a riddle.
+- **Later, ours alone**: a Georama gallery (screenshots from the port's
+  `--screenshot`, per town), a Dark Chronicle "Scoop" photo album, decomp
+  progress shown as a chapter's pages filling in (decomp.dev).
 
 ## 2. The look: dark, moonlit, gold
 
 Keep in step with what we already made. **DC_Web** (`port/web/site/index.html`)
 set the palette: near-black ink, a slightly lifted panel, soft white text, and
 **Dark Cloud gold** for the one main action. MoonMod's tools use the same family
-(`#1c1c24` canvas, `#aaaabb` labels). The launcher keeps OpenRAC's *structure*
-(rules in its `docs/STYLE.md`: one main action per page in a fixed place, rows not
+(`#1c1c24` canvas, `#aaaabb` labels). The launcher follows the reference's *structure rules*
+(its `docs/STYLE.md`: one main action per page in a fixed place, rows not
 boxes, secondary actions in a menu, removing in `--err`) and swaps its *colours*.
 
 `src/app.css` on `:root`, OpenRAC token → Chronicle value:
 
-| Token | OpenRAC | Chronicle | Source / use |
+| Token | OpenRAC (reference) | Chronicle | Source / use |
 | --- | --- | --- | --- |
 | `--ink` | `#181820` | `#0d0d12` | DC_Web `--bg`: the page |
 | `--ink-deep` | `#12121a` | `#08080c` | inputs, job output |
@@ -98,12 +119,12 @@ npm (`@fontsource/cinzel`, `@fontsource-variable/inter`); nothing loads from the
 network. Dark only, as DC_Web is.
 
 Logo: a crescent-moon mark plus "Chronicle" in Cinzel, drawn as SVG in
-`Logo.svelte` (OpenRAC's component, new paths). Ask TheMoonPeople whether we may
+`Logo.svelte`. Ask TheMoonPeople whether we may
 use the Chronicle README logo (`i.imgur.com/pCMkgRM.png`) before using it.
-Game pictures (`public/img/<id>-bg.webp`): stills from our own play, made with
-OpenRAC's `scripts/media.py still`, each credited in `THIRD_PARTY_NOTICES.md`.
+Game pictures (`public/img/<id>-bg.webp`): stills from our own play (the port's
+`--screenshot`), each credited in `THIRD_PARTY_NOTICES.md`.
 
-Write all of this into our own `docs/STYLE.md` in phase 1, as OpenRAC does.
+Write all of this into our own `docs/STYLE.md` in phase 1.
 
 ## 3. How the launcher drives each game
 
@@ -161,8 +182,7 @@ Planned, held for later:
    mod framework always agree. Builds contain no disc data.
 2. **Checkout (contributors).** Point the launcher at a Chronicle/ChronicleTwo
    checkout; **Build the game** runs its `build.sh`/`build.bat <preset>-release`
-   (Kazarov, Docker/Podman on Linux) and plays `port/build/...`. Mirrors OpenRAC's
-   `port_build.rs`.
+   (Kazarov, Docker/Podman on Linux) and plays `port/build/...`.
 
 Before shipped builds: neither Chronicle repository has a LICENSE file, so
 redistributing builds needs TheMoonPeople's written OK, or a license added upstream.
@@ -180,7 +200,7 @@ writes the same files, so both always agree.
   (`format_version: 1`, `enabled`, `settings`), keeping keys we do not know. Settings
   rows render from the manifest's typed `settings` (`boolean` → switch, `choice` →
   segmented/radios, `integer`/`number` with `min`/`max` → slider + field, `string`
-  → field), the same rows OpenRAC's `ModSetting.svelte` draws. Dependencies,
+  → field). Dependencies,
   `load_after`/`load_before` and conflicts show on the mod's page.
 - **Permissions**: list the manifest's `permissions` in plain words on the mod's
   page ("reads and changes the game", "keeps its own small save").
@@ -188,7 +208,7 @@ writes the same files, so both always agree.
   set `native_trusted`**. Trust stays the player's confirmation inside the game, as
   MoonMod's security model says. The row says "Needs trusting in game".
 - **Install**: drop a `.zip` or folder, or **Add from a link** (a GitHub repository
-  or release, as OpenRAC's `remote.rs`): preview id, author, version, games and
+  or release): preview id, author, version, games and
   permissions before anything is written. The folder is named by the manifest `id`.
 - **Bundled mods**: the MoonMod release's `mods/` (`moonmod.rpg`,
   `moonmod.roguelike`, …) come with the build, all disabled, as MoonMod does.
@@ -210,7 +230,8 @@ games/           chronicle.json, chronicle-two.json: discs, commands, paths (the
 vendor/moonmod/  manifest.schema.json at MoonMod's pinned commit
 docs/            PLAN.md, STYLE.md, INTEGRATION.md, ARCHITECTURE.md, RELEASING.md
 .github/         checks.yml (yarn verify, cargo test), ports.yml, release.yml
-UPSTREAM.md      OpenRAC, Chronicle, ChronicleTwo and MoonMod commits we follow
+UPSTREAM.md      Chronicle, ChronicleTwo and MoonMod commits we follow
+docs/REFERENCE.md  the OpenRAC commit we studied and the ideas taken from it
 ```
 
 The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
@@ -220,7 +241,7 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 
 | # | Deliverable | Done when |
 | --- | --- | --- |
-| 0 | Import OpenRAC `launcher/` at `93ac558`, rename (product, identifier, data folder), strip the RAC-only parts, GPL notices, `UPSTREAM.md` | `yarn verify` and `cargo test` pass; the app opens with an empty game list |
+| 0 | Our own skeleton: Tauri 2 + Svelte 5 + Rust core, the two games as data, the Chronicle home and a game page with **Get the game** / **Choose a build**, tokens and style tests, CI | `yarn verify` and `cargo test` pass; CI builds the app; the page opens in a browser with mock data |
 | 1 | The look: tokens, Cinzel/Inter, logo, two game themes, `docs/STYLE.md`, stylesheet tests | screenshots of the Library and a game page reviewed |
 | 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build | a PAL and an NTSC 1.02 disc each go from folder to playing |
 | 3 | MoonMod: discover, enable, settings, install from zip/link, bundled mods, Mods switch | every bundled mod toggles in the launcher and the in-game manager agrees |
@@ -237,6 +258,7 @@ ports' macOS builds are packaged. No Switch, iOS or Android.
 Decided (2026-10-29):
 
 - **Name**: Chronicle Launcher, for now.
+- **OpenRAC is a reference, not a base**: our own code and our own Dark Cloud take (§1, §1a).
 - **Builds**: we plan to ship them, but not yet. Until then **Get the game** links to
   the port's GitHub (§3).
 - **One build per game**: MoonFactory built in; mods off plays as the disc does.
@@ -247,3 +269,6 @@ Open:
 1. **Licensing of the ports**: may we redistribute Chronicle/ChronicleTwo builds?
    (Needed before phase 5.)
 2. **Logo**: use the Chronicle README logo, or our own moon mark?
+3. **License**: GPL-3.0-or-later is recommended. It matches the reference, so we
+   can adapt its pieces (CHD reader, disc detection) with their notices. MIT would
+   mean writing those from scratch.
