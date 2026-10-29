@@ -40,6 +40,10 @@ pub struct GameView {
     /// The folder the player last looked for discs in.
     pub disc_folder: Option<PathBuf>,
     pub last_crash: Option<play::Crash>,
+    /// The Mods switch under Play.
+    pub mods_on: bool,
+    /// Where the game reads mods from, for the build chosen (see `mods::mods_dir`).
+    pub mods_dir: PathBuf,
     pub activity: Activity,
     pub data: PathBuf,
     pub save: PathBuf,
@@ -60,6 +64,7 @@ pub fn view(root: &Path, config: &config::Config, game: &games::Game) -> GameVie
         (Some(_), Some(_)) => Next::Play,
     };
     let game_config = config.games.get(&game.id);
+    let mods_dir = mods_dir_for(build.as_ref(), &dirs);
     GameView {
         game: game.clone(),
         next,
@@ -69,6 +74,8 @@ pub fn view(root: &Path, config: &config::Config, game: &games::Game) -> GameVie
         set_up,
         disc_folder: game_config.and_then(|c| c.disc_folder.clone()),
         last_crash: play::last_crash(&dirs.logs),
+        mods_on: game_config.is_some_and(|c| c.mods_on),
+        mods_dir,
         activity: Activity::Idle,
         data: dirs.data,
         save: dirs.save,
@@ -91,6 +98,20 @@ pub fn choose_build(root: &Path, id: &str, folder: &Path) -> Result<GameView, St
     config.games.entry(id.to_string()).or_default().build = Some(folder.to_path_buf());
     config::save(root, &config).map_err(|e| e.to_string())?;
     Ok(view(root, &config, game))
+}
+
+/// Where the game reads mods from: beside the build's executable, or its checkout's, or the game's save folder.
+pub fn mods_dir_for(build: Option<&port::Build>, dirs: &paths::GameDirs) -> PathBuf {
+    match build.and_then(|b| b.executable.parent()) {
+        Some(executable_dir) => crate::mods::mods_dir(executable_dir, &dirs.save),
+        None => dirs.save.join("mods"),
+    }
+}
+
+pub fn set_mods_on(root: &Path, id: &str, on: bool) -> Result<(), String> {
+    let mut config = config::load(root).map_err(|e| e.to_string())?;
+    config.games.entry(id.to_string()).or_default().mods_on = on;
+    config::save(root, &config).map_err(|e| e.to_string())
 }
 
 /// Remembers where the player keeps their discs, so the next look starts there.

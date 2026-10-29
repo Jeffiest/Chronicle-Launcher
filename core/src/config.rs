@@ -14,6 +14,9 @@ pub struct GameConfig {
     /// The folder the player last looked for discs in.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub disc_folder: Option<PathBuf>,
+    /// The Mods switch under Play: off (the default) starts the game with MOONMOD_NO_MODS=1.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub mods_on: bool,
     #[serde(flatten)]
     pub other: BTreeMap<String, serde_json::Value>,
 }

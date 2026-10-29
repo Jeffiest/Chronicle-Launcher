@@ -6,6 +6,7 @@ pub mod discs;
 pub mod games;
 pub mod iso;
 pub mod library;
+pub mod mods;
 pub mod paths;
 pub mod play;
 pub mod port;

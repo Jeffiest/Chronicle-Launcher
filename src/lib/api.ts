@@ -1,7 +1,7 @@
 // The launcher's commands and events. In the app they go to Rust (src-tauri/src/lib.rs); in a plain browser
 // (npm run dev) they are mocked here, so the pages can be worked on without a build of the app or a disc.
 
-import type { Backup, Events, GameView, Save, SavesView, Scan, Stage } from "./types";
+import type { Backup, Events, GameView, Mod, ModPreview, Save, SavesView, Scan, Stage } from "./types";
 import { GAMES } from "./games";
 
 const inApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -31,7 +31,17 @@ export interface Api {
   crashReport(id: string): Promise<string>;
   /** Writes the report to Downloads and says where. */
   saveReport(id: string): Promise<string>;
-  openFolder(id: string, which: "saves" | "logs" | "game"): Promise<void>;
+  openFolder(id: string, which: "saves" | "logs" | "game" | "mods"): Promise<void>;
+  mods(id: string): Promise<Mod[]>;
+  setModEnabled(id: string, mod: string, on: boolean): Promise<void>;
+  /** A value for a setting, or null to put it back to its default. */
+  setModSetting(id: string, mod: string, setting: string, value: unknown): Promise<void>;
+  setModsOn(id: string, on: boolean): Promise<GameView>;
+  /** Asks for a mod's `.zip` (or, with `folder`, its folder), then unpacks and checks it. Null when cancelled. */
+  pickMod(id: string, folder: boolean): Promise<ModPreview | null>;
+  installMod(id: string): Promise<string>;
+  discardMod(id: string): Promise<void>;
+  removeMod(id: string, folder: string): Promise<void>;
   openLink(url: string): Promise<void>;
   on<K extends keyof Events>(event: K, listener: Listener<K>): Promise<() => void>;
 }
@@ -64,6 +74,23 @@ const app: Api = {
   crashReport: (id) => call("crash_report", { id }),
   saveReport: (id) => call("save_report", { id }),
   openFolder: (id, which) => call("open_folder", { id, which }),
+  mods: async (id) => (await call<{ mods: Mod[] }>("mods_list", { id })).mods,
+  setModEnabled: (id, mod, on) => call("set_mod_enabled", { id, modId: mod, on }),
+  setModSetting: (id, mod, setting, value) =>
+    call("set_mod_setting", { id, modId: mod, setting, value: value ?? null }),
+  setModsOn: (id, on) => call("set_mods_on", { id, on }),
+  async pickMod(id, folder) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const source = await open(
+      folder
+        ? { directory: true, title: "Choose the mod's folder" }
+        : { title: "Choose the mod's .zip", filters: [{ name: "Mod", extensions: ["zip"] }] },
+    );
+    return typeof source === "string" ? call("preview_mod", { id, source }) : null;
+  },
+  installMod: (id) => call("install_mod", { id }),
+  discardMod: (id) => call("discard_mod", { id }),
+  removeMod: (id, folder) => call("remove_mod", { id, folder }),
   async openLink(url) {
     const { openUrl } = await import("@tauri-apps/plugin-opener");
     await openUrl(url);
@@ -107,6 +134,93 @@ export function mockApi(tick = 700): Api {
     { name: "1", number: 1, play_seconds: 8640, day: 11, map_no: 0, modified: 1793180000, readable: true },
   ];
   const backups: Backup[] = [];
+  const modsOn = new Set<string>();
+  // Two of MoonMod's own bundled mods, as their manifests describe them, and one that is broken.
+  const mods: Mod[] = [
+    {
+      folder: "moonmod.rpg",
+      id: "moonmod.rpg",
+      name: "RPG: Character Paths",
+      version: "1.4.0",
+      author: "MoonMod",
+      description:
+        "Kills give XP, levels give HP, damage, toughness and skill points; a skill tree per character.",
+      permissions: ["storage.read", "storage.write", "game.read", "game.write"],
+      dependencies: [],
+      settings: [
+        {
+          id: "xp_rate",
+          name: "XP rate",
+          description: "How fast characters level.",
+          type: "number",
+          default: 1,
+          min: 0.5,
+          max: 3,
+          step: 0.1,
+          choices: [],
+          value: 1.5,
+        },
+        {
+          id: "show_levelups",
+          name: "Show level-ups",
+          description: null,
+          type: "boolean",
+          default: true,
+          min: null,
+          max: null,
+          step: null,
+          choices: [],
+          value: true,
+        },
+        {
+          id: "difficulty",
+          name: "Difficulty",
+          description: null,
+          type: "choice",
+          default: "normal",
+          min: null,
+          max: null,
+          step: null,
+          choices: ["easy", "normal", "hard"],
+          value: "normal",
+        },
+      ],
+      enabled: true,
+      native: false,
+      native_trusted: false,
+      problem: null,
+    },
+    {
+      folder: "moonmod.controls",
+      id: "moonmod.controls",
+      name: "Controls",
+      version: "1.1.0",
+      author: "MoonMod",
+      description: "Dungeon quick-item hotkeys, party shortcuts and a first-person toggle.",
+      permissions: ["game.read", "game.write", "native.extension"],
+      dependencies: [],
+      settings: [],
+      enabled: false,
+      native: true,
+      native_trusted: false,
+      problem: null,
+    },
+    {
+      folder: "half-finished",
+      id: "half-finished",
+      name: "half-finished",
+      version: null,
+      author: null,
+      description: null,
+      permissions: [],
+      dependencies: [],
+      settings: [],
+      enabled: false,
+      native: false,
+      native_trusted: false,
+      problem: "mod.json is missing",
+    },
+  ];
 
   const view = (id: string): GameView => {
     const game = GAMES.find((g) => g.id === id)!;
@@ -137,6 +251,8 @@ export function mockApi(tick = 700): Api {
         : playing.has(id)
           ? { kind: "playing" }
           : { kind: "idle" },
+      mods_on: modsOn.has(id),
+      mods_dir: `~/${game.port}/mods`,
       data: `~/.local/share/chronicle-launcher/games/${id}/data`,
       save: `~/.local/share/chronicle-launcher/games/${id}/save`,
     };
@@ -235,6 +351,52 @@ export function mockApi(tick = 700): Api {
       "Dark Cloud (Chronicle), Chronicle Launcher 0.1.0\nThe game stopped unexpectedly. It stopped on signal 11.\n",
     saveReport: async (id) => `~/Downloads/${id}-report.txt`,
     async openFolder() {},
+    mods: async (id) => (id === "chronicle" ? structuredClone(mods) : []),
+    async setModEnabled(_id, mod, on) {
+      mods.find((m) => m.id === mod)!.enabled = on;
+    },
+    async setModSetting(_id, mod, setting, value) {
+      const found = mods.find((m) => m.id === mod)!.settings.find((s) => s.id === setting)!;
+      found.value = value ?? found.default;
+    },
+    async setModsOn(id, on) {
+      if (on) modsOn.add(id);
+      else modsOn.delete(id);
+      return view(id);
+    },
+    pickMod: async () => ({
+      manifest: {
+        id: "author.weather",
+        name: "Weather Report",
+        version: "0.3.0",
+        author: "A Modder",
+        description: "Says what the sky over Norune will do tomorrow.",
+        games: ["chronicle"],
+        permissions: ["game.read", "storage.write"],
+        native_extension: null,
+      },
+      replaces: false,
+      for_this_game: true,
+    }),
+    async installMod() {
+      mods.push({
+        ...mods[2],
+        folder: "author.weather",
+        id: "author.weather",
+        name: "Weather Report",
+        version: "0.3.0",
+        author: "A Modder",
+        problem: null,
+      });
+      return "author.weather";
+    },
+    async discardMod() {},
+    async removeMod(_id, folder) {
+      mods.splice(
+        mods.findIndex((m) => m.folder === folder),
+        1,
+      );
+    },
     async openLink(url) {
       window.open(url, "_blank", "noopener");
     },

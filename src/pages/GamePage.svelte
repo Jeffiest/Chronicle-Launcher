@@ -5,6 +5,7 @@
   import CrashNotice from "../components/CrashNotice.svelte";
   import DiscPanel from "../components/DiscPanel.svelte";
   import Menu, { type Item } from "../components/Menu.svelte";
+  import MoonFactory from "../components/MoonFactory.svelte";
   import SavesPanel from "../components/SavesPanel.svelte";
   import { api } from "../lib/api";
   import { fileName, when } from "../lib/format";
@@ -80,6 +81,22 @@
         {#if view.next === "get-the-game"}
           <button onclick={choose}>Choose a build</button>
         {/if}
+        {#if view.next === "play"}
+          <label
+            class="mods-switch"
+            title="Off: the game starts with no mod loaded, and your choices are kept"
+          >
+            <input
+              class="switch"
+              type="checkbox"
+              checked={view.mods_on}
+              disabled={busy}
+              onchange={async (e) =>
+                replace(await attempt(() => api.setModsOn(game.id, e.currentTarget.checked)))}
+            />
+            <span>Mods</span>
+          </label>
+        {/if}
         {#if !busy}<Menu {items} />{/if}
       </div>
       <p class="where">
@@ -115,6 +132,10 @@
 
     {#if settingUp && view.can_set_up && view.build}
       <DiscPanel {view} />
+    {/if}
+
+    {#if view.build && view.can_set_up}
+      <MoonFactory {view} />
     {/if}
 
     {#if view.set_up}
@@ -215,6 +236,19 @@
     align-items: center;
     gap: 14px;
     margin-top: 20px;
+  }
+  .mods-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    background: var(--veil);
+    font: 700 15px/1 var(--font-title);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sky-haze);
+    cursor: pointer;
   }
   .where {
     display: flex;

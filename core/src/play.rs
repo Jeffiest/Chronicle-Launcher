@@ -9,14 +9,19 @@ use std::path::Path;
 use std::process::Command;
 
 /// `darkcloud --data <data> --save <save>`, from the game's folder, so nothing it writes beside itself lands in the
-/// build.
-pub fn command(build: &Build, dirs: &GameDirs) -> Command {
+/// build. With `mods_on` false, `MOONMOD_NO_MODS=1` starts every mod off for this run, keeping the player's choices.
+pub fn command(build: &Build, dirs: &GameDirs, mods_on: bool) -> Command {
     let mut command = Command::new(&build.executable);
     command
         .arg("--data")
         .arg(&dirs.data)
         .arg("--save")
         .arg(&dirs.save);
+    if mods_on {
+        command.env_remove("MOONMOD_NO_MODS");
+    } else {
+        command.env("MOONMOD_NO_MODS", "1");
+    }
     if let Some(folder) = dirs.data.parent() {
         command.current_dir(folder);
     }

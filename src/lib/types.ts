@@ -45,6 +45,8 @@ export interface GameView {
   set_up: SetUp | null;
   disc_folder: string | null;
   last_crash: Crash | null;
+  mods_on: boolean;
+  mods_dir: string;
   activity: Activity;
   data: string;
   save: string;
@@ -108,4 +110,50 @@ export interface Events {
   "setup-line": { id: string; line: string };
   "setup-finished": { id: string; ok: boolean; message: string };
   "game-ended": { id: string; outcome: Outcome };
+}
+
+export interface ModSetting {
+  id: string;
+  name: string;
+  description: string | null;
+  type: "boolean" | "integer" | "number" | "string" | "choice";
+  default: unknown;
+  min: number | null;
+  max: number | null;
+  step: number | null;
+  choices: string[];
+  value: unknown;
+}
+
+export interface Mod {
+  folder: string;
+  id: string;
+  name: string;
+  version: string | null;
+  author: string | null;
+  description: string | null;
+  permissions: string[];
+  dependencies: string[];
+  settings: ModSetting[];
+  enabled: boolean;
+  native: boolean;
+  native_trusted: boolean;
+  problem: string | null;
+}
+
+export interface ModManifest {
+  id: string;
+  name: string;
+  version: string;
+  author: string | null;
+  description: string | null;
+  games: string[];
+  permissions: string[];
+  native_extension: { library: string } | null;
+}
+
+export interface ModPreview {
+  manifest: ModManifest;
+  replaces: boolean;
+  for_this_game: boolean;
 }

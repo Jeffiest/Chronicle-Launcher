@@ -109,9 +109,8 @@ place, secondary actions in a menu, removing last, colours only as tokens, hover
 only under `@media (hover: hover)`.
 
 Still to do in phase 1: backgrounds from our own play (the port's
-`--screenshot`) behind each chapter, the gold moon as the progress indicator, and
-`docs/STYLE.md`. The logo, icon and fonts are The Moon People's
-(`THIRD_PARTY_NOTICES.md`); confirm with them before a release.
+`--screenshot`) behind each chapter, and `docs/STYLE.md`. The logo, icon and fonts
+are The Moon People's (`THIRD_PARTY_NOTICES.md`), kept with their approval.
 
 ## 3. How the launcher drives each game
 
@@ -201,9 +200,14 @@ writes the same files, so both always agree.
   `moonmod.roguelike`, …) come with the build, all disabled, as MoonMod does.
 - **Mods switch under Play**: off by default (the game as the disc plays it). Off
   starts the game with every mod disabled for that run without forgetting the
-  player's choices. Needs a `--no-mods` flag in MoonFactory (agreed 2026-10-29):
-  the game starts with no mod loaded and leaves `profile.json` as it is. It is a
-  MoonMod change, added to both ports' patches, and lands before phase 3.
+  player's choices: the launcher sets `MOONMOD_NO_MODS=1`, which MoonFactory reads
+  at start (MoonMod branch `launcher-no-mods`, in its runtime and both ports'
+  patches). An environment variable, not a flag, so neither port's argument
+  parser changes. A MoonMod build without that change ignores it and loads the
+  mods the player turned on.
+- **Where the mods are**: the folder the game reads, by its own rule
+  (`mods_directory.hpp`): `mods/` at the checkout's root, else beside the
+  executable, else `<save>/mods`.
 - **Create**: a "New mod" button runs `tools/moonfactory.py new` into the mods
   folder and opens it; developer view only.
 
@@ -231,7 +235,7 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 | 0 | Our own skeleton: Tauri 2 + Svelte 5 + Rust core, the two games as data, the Chronicle home and a game page with **Get the game** / **Choose a build**, tokens and style tests, CI | `yarn verify` and `cargo test` pass; CI builds the app; the page opens in a browser with mock data |
 | 1 | The look: the games' materials, fonts, logo and icon (started), backgrounds from our play, the gold-moon progress, `docs/STYLE.md` | screenshots of the Library and a game page reviewed |
 | 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build. **Built**; tested with stand-ins for the port's programs, not yet with a real disc | a PAL disc goes from folder to playing; an NTSC disc is turned away with its reason |
-| 3 | MoonMod: discover, enable, settings, install from zip/link, bundled mods, Mods switch | every bundled mod toggles in the launcher and the in-game manager agrees |
+| 3 | MoonMod: discover, enable, settings, install from zip or folder, bundled mods, Mods switch. **Built**, but not install from a GitHub link yet; every bundled mod and example passes the launcher's manifest checks | every bundled mod toggles in the launcher and the in-game manager agrees |
 | 4 | Dark Chronicle: `dc2data` set-up and check, play, saves, MoonMod on `chronicle-two` | a PAL disc goes from folder to playing with a mod on |
 | 5 | Builds and releases: `ports.yml` (Windows x64, Linux x64; macOS arm64 after), signed launcher installers, self-update | held for later; needs the ports' license OK (§3) |
 | 6 | Later: settings pages from each port's `config.json`, save viewer then editor (Chronicle's `saves/1/save.dat`, ChronicleTwo's `dc2Ver4` JSON), decomp.dev progress band, Discord presence, DC2-Toolkit/dc1tk tools | each its own PR |
@@ -246,18 +250,17 @@ Decided (2026-10-29):
 
 - **Name**: Chronicle Launcher, for now.
 - **Dark Cloud is PAL only**: no NTSC.
+- **The Moon People's assets** (the Chronicle logo, the ports' icon, Chronicle Title and Chronicle Sharp) stay in the launcher.
 - **OpenRAC is a reference, not a base**: our own code and our own Dark Cloud take (§1, §1a).
 - **Builds**: we plan to ship them, but not yet. Until then **Get the game** links to
   the port's GitHub (§3).
 - **One build per game**: MoonFactory built in; mods off plays as the disc does.
-- **`--no-mods`**: added to MoonFactory for the Mods switch (§4).
+- **Mods off**: MoonFactory reads `MOONMOD_NO_MODS=1` for the Mods switch (§4).
 
 Open:
 
 1. **Licensing of the ports**: may we redistribute Chronicle/ChronicleTwo builds?
    (Needed before phase 5.)
-2. **Logo, icon and fonts**: the launcher now uses The Moon People's (the Chronicle
-   logo, the ports' icon, Chronicle Title and Chronicle Sharp). OK to keep for a release?
-3. **License**: GPL-3.0-or-later is recommended. It matches the reference, so we
+2. **License**: GPL-3.0-or-later is recommended. It matches the reference, so we
    can adapt its pieces (CHD reader, disc detection) with their notices. MIT would
    mean writing those from scratch.

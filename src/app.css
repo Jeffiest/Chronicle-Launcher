@@ -362,3 +362,56 @@ ol.steps > li.done::before {
     transition-duration: 1ms !important;
   }
 }
+
+/* On/off is a switch: a track of slate, lit with the blue moon when on, and a pale gold knob. */
+input.switch {
+  appearance: none;
+  flex: none;
+  width: 46px;
+  height: 26px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--stone-rim);
+  box-shadow:
+    inset 0 2px 3px var(--bevel-dark),
+    0 0 0 2px var(--slate-rim);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+input.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--gold-hi), var(--moon-pale) 60%, var(--gold-mid));
+  box-shadow: 0 1px 2px var(--bevel-dark);
+  transition: transform var(--fast) var(--ease);
+}
+
+input.switch:checked {
+  background: var(--moon-blue);
+}
+
+input.switch:checked::after {
+  transform: translateX(20px);
+}
+
+input.switch:disabled {
+  cursor: default;
+  filter: saturate(0.3) brightness(0.8);
+}
+
+/* A setting is a row: its name and a line on the left, its control on the right. */
+.setting {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 20px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--stone-lo);
+}

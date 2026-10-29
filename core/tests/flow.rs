@@ -31,6 +31,7 @@ echo "verified 3/3 files in $3""#,
         r#"[ "$1" = --data ] && [ "$3" = --save ] || exit 2
 [ -f "$2/languages.json" ] || exit 3
 echo "config: loaded $4/config.json"
+echo "mods: ${MOONMOD_NO_MODS:-on}"
 exit ${DC_TEST_EXIT:-0}"#,
     );
 
@@ -61,7 +62,7 @@ exit ${DC_TEST_EXIT:-0}"#,
     );
 
     let run = |exit: &str| {
-        let mut command = play::command(&built, &dirs);
+        let mut command = play::command(&built, &dirs, false);
         command.env("DC_TEST_EXIT", exit);
         let child = Mutex::new(process::spawn(command).unwrap());
         play::outcome(&process::follow(&child, &dirs.logs.join("play.log"), |_| {}).unwrap())
@@ -70,6 +71,19 @@ exit ${DC_TEST_EXIT:-0}"#,
     assert!(matches!(run("4"), play::Outcome::Crashed { .. }));
     let log = std::fs::read_to_string(dirs.logs.join("play.log")).unwrap();
     assert!(log.contains(&format!("config: loaded {}/config.json", dirs.save.display())));
+    assert!(
+        log.contains("mods: 1"),
+        "the Mods switch is off by default: {log}"
+    );
+
+    let command = play::command(&built, &dirs, true);
+    let child = Mutex::new(process::spawn(command).unwrap());
+    process::follow(&child, &dirs.logs.join("mods-on.log"), |_| {}).unwrap();
+    let log = std::fs::read_to_string(dirs.logs.join("mods-on.log")).unwrap();
+    assert!(
+        log.contains("mods: on"),
+        "with the switch on, the variable is not set: {log}"
+    );
 
     std::fs::remove_file(dirs.data.join("languages.json")).unwrap();
     assert_eq!(run("0"), play::Outcome::NoData);

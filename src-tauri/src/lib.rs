@@ -7,12 +7,16 @@
 //! - `game-ended` (`{ id, outcome }`).
 
 use chronicle_launcher_core::library::{self, Activity, GameView};
-use chronicle_launcher_core::{discs, games, paths, play, process, saves, setup};
+use chronicle_launcher_core::{discs, games, mods, paths, play, process, saves, setup};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
+
+/// A mod unpacked and checked, waiting for the player to install it from its preview.
+#[derive(Default)]
+struct Staged(Mutex<HashMap<String, mods::Staged>>);
 
 /// What runs for each game: its process, and what it is doing.
 #[derive(Default)]
@@ -223,7 +227,7 @@ fn play(app: AppHandle, runs: State<Runs>, id: String) -> Result<GameView, Strin
     }
     let dirs = paths::game_dirs(&root(), &id);
     std::fs::create_dir_all(&dirs.save).map_err(|e| e.to_string())?;
-    let child = process::spawn(play::command(&build, &dirs))
+    let child = process::spawn(play::command(&build, &dirs, current.mods_on))
         .map_err(|e| format!("{} could not start: {e}", build.executable.display()))?;
     let child = Arc::new(Mutex::new(child));
     runs.0.lock().unwrap().insert(
@@ -356,10 +360,12 @@ fn dirs_downloads() -> Option<PathBuf> {
 fn open_folder(app: AppHandle, id: String, which: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
     let dirs = paths::game_dirs(&root(), &id);
+    let mods_dir = library::view_of(&root(), &id)?.mods_dir;
     let folder: &Path = match which.as_str() {
         "saves" => &dirs.save,
         "logs" => &dirs.logs,
         "game" => &dirs.root,
+        "mods" => &mods_dir,
         _ => return Err(format!("No folder called {which}")),
     };
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
@@ -368,9 +374,104 @@ fn open_folder(app: AppHandle, id: String, which: String) -> Result<(), String> 
         .map_err(|e| e.to_string())
 }
 
+/// The game's mods, as the launcher and the game both read them.
+#[derive(Serialize)]
+struct ModsView {
+    mods: Vec<mods::Mod>,
+}
+
+fn mods_place(id: &str) -> Result<(PathBuf, PathBuf), String> {
+    let view = library::view_of(&root(), id)?;
+    Ok((view.mods_dir, view.save))
+}
+
+/// The game writes the same profile; changing it while the game runs could lose one side's change.
+fn not_playing(runs: &Runs, id: &str) -> Result<(), String> {
+    match runs.activity(id) {
+        Activity::Playing => Err("Close the game first: it is using the mod settings.".into()),
+        _ => Ok(()),
+    }
+}
+
+#[tauri::command]
+fn mods_list(id: String) -> Result<ModsView, String> {
+    let (dir, save) = mods_place(&id)?;
+    Ok(ModsView {
+        mods: mods::list(&dir, &save, &id)?,
+    })
+}
+
+#[tauri::command]
+fn set_mod_enabled(runs: State<Runs>, id: String, mod_id: String, on: bool) -> Result<(), String> {
+    not_playing(&runs, &id)?;
+    let (dir, save) = mods_place(&id)?;
+    mods::set_enabled(&dir, &save, &id, &mod_id, on)
+}
+
+#[tauri::command]
+fn set_mod_setting(
+    runs: State<Runs>,
+    id: String,
+    mod_id: String,
+    setting: String,
+    value: Option<serde_json::Value>,
+) -> Result<(), String> {
+    not_playing(&runs, &id)?;
+    let (dir, save) = mods_place(&id)?;
+    mods::set_setting(&dir, &save, &id, &mod_id, &setting, value)
+}
+
+#[tauri::command]
+fn set_mods_on(runs: State<Runs>, id: String, on: bool) -> Result<GameView, String> {
+    not_playing(&runs, &id)?;
+    library::set_mods_on(&root(), &id, on)?;
+    view(&runs, &id)
+}
+
+/// Unpacks or copies a `.zip` or folder and checks it; nothing is installed until `install_mod`.
+#[tauri::command]
+fn preview_mod(staged: State<Staged>, id: String, source: PathBuf) -> Result<mods::Preview, String> {
+    let (dir, _) = mods_place(&id)?;
+    if let Some(old) = staged.0.lock().unwrap().remove(&id) {
+        old.discard();
+    }
+    let package = mods::stage(&source, &dir, &id)?;
+    let preview = package.preview.clone();
+    staged.0.lock().unwrap().insert(id, package);
+    Ok(preview)
+}
+
+#[tauri::command]
+fn install_mod(runs: State<Runs>, staged: State<Staged>, id: String) -> Result<String, String> {
+    not_playing(&runs, &id)?;
+    let (dir, _) = mods_place(&id)?;
+    let package = staged
+        .0
+        .lock()
+        .unwrap()
+        .remove(&id)
+        .ok_or("Nothing waiting to be installed.")?;
+    package.install(&dir)
+}
+
+#[tauri::command]
+fn discard_mod(staged: State<Staged>, id: String) {
+    if let Some(package) = staged.0.lock().unwrap().remove(&id) {
+        package.discard();
+    }
+}
+
+#[tauri::command]
+fn remove_mod(runs: State<Runs>, id: String, folder: String) -> Result<(), String> {
+    not_playing(&runs, &id)?;
+    let (dir, _) = mods_place(&id)?;
+    mods::remove(&dir, &folder)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(Runs::default())
+        .manage(Staged::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -388,6 +489,14 @@ pub fn run() {
             crash_report,
             save_report,
             open_folder,
+            mods_list,
+            set_mod_enabled,
+            set_mod_setting,
+            set_mods_on,
+            preview_mod,
+            install_mod,
+            discard_mod,
+            remove_mod,
         ])
         .run(tauri::generate_context!())
         .expect("the launcher's window could not start");

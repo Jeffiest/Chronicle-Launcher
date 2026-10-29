@@ -33,6 +33,12 @@ Phase 2 of [the plan](docs/PLAN.md), for Dark Cloud:
 - **Saves**: each save's play time and day, read from its `save.dat`; **Back up now**, and restoring a backup (what
   was there is backed up first).
 
+Phase 3, Moon Factory, for Dark Cloud: the game's MoonMod mods, from the same folder the game reads, each with
+its switch, its settings (switches, choices, sliders, from its own `mod.json`) and what it is allowed to do in plain
+words. Choices go to the same `profile.json` the in-game Mod Manager uses. **Add a mod** takes a `.zip` or a
+folder and shows what it is before installing it. The **Mods** switch beside Play is off by default: the game then
+starts with `MOONMOD_NO_MODS=1`, which needs MoonMod's `launcher-no-mods` change in the build.
+
 This has been run end to end with stand-ins for `dcdata` and `darkcloud` (`core/tests/flow.rs`, and the app itself
 on a virtual display), not yet with a real disc. Dark Chronicle comes in phase 4.
 
