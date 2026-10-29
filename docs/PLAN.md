@@ -137,9 +137,22 @@ it never writes `config.json` or `profile.json` while the game runs; exit status
 sends the player back to **Set up**, 4 and crashes open the crash notice.
 
 **Where the builds come from.** Neither port publishes GitHub releases today (only
-CI artifacts). Two modes, as OpenRAC has:
+CI artifacts). There is **one build per game**: the port with MoonFactory built in.
+With every mod off (or the Mods switch off) it plays as the disc does, so there is
+no separate unmodded build.
 
-1. **Installed (players).** The launcher's installer, or a first-run download from
+**For now (decided 2026-10-29):** the launcher does not ship or download builds.
+When a game has no build, its main button is **Get the game** and opens the
+port's GitHub page in the browser (Chronicle's, or ChronicleTwo's; once MoonMod
+publishes `MoonMod-<commit>` releases for both, their release page instead).
+Beside it, **Choose a build** picks a folder that holds `darkcloud`/`darkchronicle`
+and its extractor, and the button becomes **Set up from your disc** → **Play**.
+The link lives in `games/<id>.json` (`get_url`), so switching to shipped builds
+later changes data, not code.
+
+Planned, held for later:
+
+1. **Shipped builds (players).** The launcher's installer, or a first-run download from
    *this* repository's releases, carries a port build for the player's system. Our
    CI (`.github/workflows/ports.yml`) builds each port at a pinned commit, with
    MoonFactory applied (`ports/<game>/apply-moonfactory.ps1` from MoonMod at its
@@ -151,10 +164,8 @@ CI artifacts). Two modes, as OpenRAC has:
    (Kazarov, Docker/Podman on Linux) and plays `port/build/...`. Mirrors OpenRAC's
    `port_build.rs`.
 
-**Blocker to clear first:** neither Chronicle repository has a LICENSE file.
-Redistributing builds (mode 1) needs TheMoonPeople's written OK, or a license added
-upstream. Until then ship mode 2 only, plus "bring your own build" (pick a folder
-with `darkcloud`/`darkchronicle` in it).
+Before shipped builds: neither Chronicle repository has a LICENSE file, so
+redistributing builds needs TheMoonPeople's written OK, or a license added upstream.
 
 ## 4. MoonMod in the launcher
 
@@ -183,8 +194,9 @@ writes the same files, so both always agree.
   `moonmod.roguelike`, …) come with the build, all disabled, as MoonMod does.
 - **Mods switch under Play**: off by default (the game as the disc plays it). Off
   starts the game with every mod disabled for that run without forgetting the
-  player's choices. *Needs a MoonFactory flag such as `--no-mods`; propose it in
-  MoonMod.*
+  player's choices. Needs a `--no-mods` flag in MoonFactory (agreed 2026-10-29):
+  the game starts with no mod loaded and leaves `profile.json` as it is. It is a
+  MoonMod change, added to both ports' patches, and lands before phase 3.
 - **Create**: a "New mod" button runs `tools/moonfactory.py new` into the mods
   folder and opens it; developer view only.
 
@@ -210,22 +222,28 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 | --- | --- | --- |
 | 0 | Import OpenRAC `launcher/` at `93ac558`, rename (product, identifier, data folder), strip the RAC-only parts, GPL notices, `UPSTREAM.md` | `yarn verify` and `cargo test` pass; the app opens with an empty game list |
 | 1 | The look: tokens, Cinzel/Inter, logo, two game themes, `docs/STYLE.md`, stylesheet tests | screenshots of the Library and a game page reviewed |
-| 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, "bring your own build" and checkout build | a PAL and an NTSC 1.02 disc each go from folder to playing |
+| 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build | a PAL and an NTSC 1.02 disc each go from folder to playing |
 | 3 | MoonMod: discover, enable, settings, install from zip/link, bundled mods, Mods switch | every bundled mod toggles in the launcher and the in-game manager agrees |
 | 4 | Dark Chronicle: `dc2data` set-up and check, play, saves, MoonMod on `chronicle-two` | a PAL disc goes from folder to playing with a mod on |
-| 5 | Builds and releases: `ports.yml` (Windows x64, Linux x64; macOS arm64 after), signed launcher installers, self-update | depends on the license answer in §3 |
+| 5 | Builds and releases: `ports.yml` (Windows x64, Linux x64; macOS arm64 after), signed launcher installers, self-update | held for later; needs the ports' license OK (§3) |
 | 6 | Later: settings pages from each port's `config.json`, save viewer then editor (Chronicle's `saves/1/save.dat`, ChronicleTwo's `dc2Ver4` JSON), decomp.dev progress band, Discord presence, DC2-Toolkit/dc1tk tools | each its own PR |
 
 Platforms: Windows and Linux first (MoonMod's scripts are PowerShell today; the
 Linux Flatpaks the ports build are a second source to support). macOS when the
 ports' macOS builds are packaged. No Switch, iOS or Android.
 
-## 7. Open questions
+## 7. Decisions and open questions
+
+Decided (2026-10-29):
+
+- **Name**: Chronicle Launcher, for now.
+- **Builds**: we plan to ship them, but not yet. Until then **Get the game** links to
+  the port's GitHub (§3).
+- **One build per game**: MoonFactory built in; mods off plays as the disc does.
+- **`--no-mods`**: added to MoonFactory for the Mods switch (§4).
+
+Open:
 
 1. **Licensing of the ports**: may we redistribute Chronicle/ChronicleTwo builds?
-   (Blocks phase 5.)
+   (Needed before phase 5.)
 2. **Logo**: use the Chronicle README logo, or our own moon mark?
-3. **Name**: "Chronicle Launcher" or a Moon People name (e.g. "Moon Gate")?
-4. **`--no-mods`** (or equivalent) in MoonFactory, for the Mods switch.
-5. **One build or two** per game: a MoonFactory build only (mods off = vanilla), or
-   also an unpatched build for players who want none of it?
