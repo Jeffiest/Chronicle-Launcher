@@ -8,6 +8,8 @@ export interface State {
 }
 
 export function stateOf(view: GameView): State {
+  if (view.activity.kind === "setting-up") return { words: "Setting up", tone: "warn" };
+  if (view.activity.kind === "playing") return { words: "Playing", tone: "ok" };
   if (view.build_problem) return { words: "Its build has moved", tone: "err" };
   switch (view.next) {
     case "get-the-game":
@@ -15,12 +17,22 @@ export function stateOf(view: GameView): State {
     case "set-up":
       return { words: "Needs your disc", tone: "warn" };
     case "play":
-      return { words: "Ready to play", tone: "ok" };
+      return view.last_crash
+        ? { words: "Stopped unexpectedly last time", tone: "err" }
+        : { words: "Ready to play", tone: "ok" };
   }
 }
 
-export const MAIN_BUTTON: Record<GameView["next"], string> = {
-  "get-the-game": "Get the game",
-  "set-up": "Set up from your disc",
-  play: "Play",
-};
+/** The main button's words, which always name the next step. */
+export function mainButton(view: GameView): string {
+  if (view.activity.kind === "setting-up") return "Setting up…";
+  if (view.activity.kind === "playing") return "Playing";
+  switch (view.next) {
+    case "get-the-game":
+      return "Get the game";
+    case "set-up":
+      return "Set up from your disc";
+    case "play":
+      return "Play";
+  }
+}

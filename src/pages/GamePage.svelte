@@ -1,35 +1,68 @@
-<!-- A chapter's page: its sky and name, the one next step, and the steps to get there. -->
+<!-- A chapter's page: its name, the one next step, and below, what that step needs: the disc, the saves, a crash
+     to report, or the steps still to come. -->
 <script lang="ts">
   import Clouds from "../components/Clouds.svelte";
+  import CrashNotice from "../components/CrashNotice.svelte";
+  import DiscPanel from "../components/DiscPanel.svelte";
   import Menu, { type Item } from "../components/Menu.svelte";
+  import SavesPanel from "../components/SavesPanel.svelte";
+  import { api } from "../lib/api";
+  import { fileName, when } from "../lib/format";
   import { chapterName, material } from "../lib/games";
-  import { MAIN_BUTTON, stateOf } from "../lib/next";
+  import { mainButton, stateOf } from "../lib/next";
+  import { attempt, replace, toast } from "../lib/store.svelte";
   import type { GameView } from "../lib/types";
 
-  let {
-    view,
-    onBack,
-    onGet,
-    onChoose,
-    onForget,
-  }: {
-    view: GameView;
-    onBack: () => void;
-    onGet: () => void;
-    onChoose: () => void;
-    onForget: () => void;
-  } = $props();
+  let { view, onBack }: { view: GameView; onBack: () => void } = $props();
+  let removing = $state(false);
 
   const game = $derived(view.game);
-  const state = $derived(stateOf(view));
+  const standing = $derived(stateOf(view));
+  const busy = $derived(view.activity.kind !== "idle");
   const regions = $derived(game.discs.map((d) => d.region).join(" or "));
-  // Set-up and Play come in the next phase (docs/PLAN.md §6); until then their button waits.
-  const waiting = $derived(view.next !== "get-the-game");
+  const settingUp = $derived(view.next === "set-up" || view.activity.kind === "setting-up");
+
+  async function main() {
+    if (view.next === "get-the-game") return attempt(() => api.openLink(game.get_url));
+    if (view.next === "set-up") {
+      document.getElementById("disc")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    replace(await attempt(() => api.play(game.id)));
+  }
+
+  async function choose() {
+    replace(await attempt(() => api.chooseBuild(game.id)));
+  }
+
+  async function removeSetUp() {
+    removing = false;
+    const after = await attempt(() => api.removeSetUp(game.id));
+    if (after) {
+      replace(after);
+      toast("The set-up is removed. Your disc and saves are kept.", "ok");
+    }
+  }
 
   const items: Item[] = $derived([
-    { label: view.build ? "Choose another build" : "Choose a build", run: onChoose },
-    { label: `${game.port} on GitHub`, run: onGet },
-    ...(view.build ? [{ label: "Forget this build", run: onForget, removes: true }] : []),
+    { label: view.build ? "Choose another build" : "Choose a build", run: choose },
+    { label: `${game.port} on GitHub`, run: () => attempt(() => api.openLink(game.repository)) },
+    ...(view.build
+      ? [
+          { label: "Open the game's folder", run: () => attempt(() => api.openFolder(game.id, "game")) },
+          { label: "Logs", run: () => attempt(() => api.openFolder(game.id, "logs")) },
+        ]
+      : []),
+    ...(view.set_up ? [{ label: "Remove the set-up", run: () => (removing = true), removes: true }] : []),
+    ...(view.build && !view.set_up
+      ? [
+          {
+            label: "Forget this build",
+            run: async () => replace(await attempt(() => api.forgetBuild(game.id))),
+            removes: true,
+          },
+        ]
+      : []),
   ]);
 </script>
 
@@ -41,69 +74,99 @@
       <h1 class="gold-text">{game.title}</h1>
       <p class="hero">{game.hero}</p>
       <div class="actions">
-        <button class="primary" disabled={waiting} onclick={onGet}>{MAIN_BUTTON[view.next]}</button>
+        <button class="primary" disabled={busy || (view.next === "set-up" && !view.can_set_up)} onclick={main}
+          >{mainButton(view)}</button
+        >
         {#if view.next === "get-the-game"}
-          <button onclick={onChoose}>Choose a build</button>
+          <button onclick={choose}>Choose a build</button>
         {/if}
-        <Menu {items} />
+        {#if !busy}<Menu {items} />{/if}
       </div>
       <p class="where">
-        <span class="state {state.tone}">{state.words}</span>
-        {#if waiting}<span class="note">Setting up from your disc arrives in the launcher's next update.</span
-          >{/if}
+        <span class="state {standing.tone}">{standing.words}</span>
+        {#if view.set_up?.release}<span class="note">{view.set_up.release}</span>{/if}
+        {#if view.next === "set-up" && !view.can_set_up}
+          <span class="note"
+            >Setting {game.title} up from its disc comes in a later update of the launcher.</span
+          >
+        {/if}
       </p>
     </div>
   </section>
   <Clouds height={110} />
 
   <section class="body">
-    <div class="paper steps-panel rise">
-      <h2>Getting there</h2>
-      <ol class="steps">
-        <li class:done={view.build !== null}>
-          <div>
-            <strong>Get the game</strong>
-            <p class="line">Build {game.port} from its GitHub, or get a MoonMod release of it.</p>
-          </div>
-          <button onclick={onGet}>Open GitHub</button>
-        </li>
-        <li class:done={view.build !== null}>
-          <div>
-            <strong>Choose a build</strong>
-            <p class="line">
-              {#if view.build_problem}
-                <span class="state err">{view.build_problem}</span>
-              {:else}
-                The folder with <code>{game.executable}</code> and <code>{game.extractor}</code> in it, or
-                your checkout of {game.port}.
-              {/if}
-            </p>
-          </div>
-          <button onclick={onChoose}>{view.build ? "Choose another" : "Choose"}</button>
-        </li>
-        <li class:done={view.next === "play"}>
-          <div>
-            <strong>Set up from your disc</strong>
-            <p class="line">Your own {regions} disc of {game.title}. Nothing is downloaded.</p>
-          </div>
-          <span class="soon">Next update</span>
-        </li>
-        <li>
-          <div>
-            <strong>Play</strong>
-            <p class="line">With your MoonMod mods, or as the disc plays it.</p>
-          </div>
-        </li>
-      </ol>
-    </div>
+    {#if removing}
+      <div class="stone confirm rise" role="alertdialog" aria-label="Remove the set-up">
+        <p>
+          Remove the set-up? This deletes the game data made from your disc. Your disc image and saves are
+          kept.
+        </p>
+        <span>
+          <button class="removes" onclick={removeSetUp}>Remove</button>
+          <button onclick={() => (removing = false)}>Keep it</button>
+        </span>
+      </div>
+    {/if}
 
-    {#if view.build}
+    {#if view.last_crash && !busy}
+      <CrashNotice id={game.id} crash={view.last_crash} />
+    {/if}
+
+    {#if settingUp && view.can_set_up && view.build}
+      <DiscPanel {view} />
+    {/if}
+
+    {#if view.set_up}
+      <SavesPanel {view} />
       <details class="stone about rise">
-        <summary>About this build</summary>
-        <p>Build: <code>{view.build.dir}</code></p>
+        <summary>About this set-up</summary>
+        <p>Disc: <code>{fileName(view.set_up.disc)}</code>, {view.set_up.release ?? "release not listed"}</p>
+        <p>Set up: {when(view.set_up.finished)}</p>
+        <p>Build: <code>{view.build?.dir ?? view.set_up.build}</code></p>
         <p>Game data: <code>{view.data}</code></p>
         <p>Saves: <code>{view.save}</code></p>
       </details>
+    {:else}
+      <div class="paper steps-panel rise">
+        <h2>Getting there</h2>
+        <ol class="steps">
+          <li class:done={view.build !== null}>
+            <div>
+              <strong>Get the game</strong>
+              <p class="line">Build {game.port} from its GitHub, or get a MoonMod release of it.</p>
+            </div>
+            <button onclick={() => attempt(() => api.openLink(game.get_url))}>Open GitHub</button>
+          </li>
+          <li class:done={view.build !== null}>
+            <div>
+              <strong>Choose a build</strong>
+              <p class="line">
+                {#if view.build_problem}
+                  <span class="state err">{view.build_problem}</span>
+                {:else}
+                  The folder with <code>{game.executable}</code> and <code>{game.extractor}</code> in it, or
+                  your checkout of {game.port}.
+                {/if}
+              </p>
+            </div>
+            <button onclick={choose}>{view.build ? "Choose another" : "Choose"}</button>
+          </li>
+          <li>
+            <div>
+              <strong>Set up from your disc</strong>
+              <p class="line">Your own {regions} disc of {game.title}. Nothing is downloaded.</p>
+            </div>
+            {#if !view.can_set_up}<span class="soon">Later update</span>{/if}
+          </li>
+          <li>
+            <div>
+              <strong>Play</strong>
+              <p class="line">With your MoonMod mods, or as the disc plays it.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
     {/if}
   </section>
 </main>
@@ -178,6 +241,18 @@
     width: 100%;
     max-width: calc(1200px - 2 * var(--page-x));
     margin: 0 auto;
+  }
+  .confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+    padding: 14px 20px;
+  }
+  .confirm span {
+    display: flex;
+    gap: 10px;
   }
   .steps-panel {
     padding: 20px 24px 10px;

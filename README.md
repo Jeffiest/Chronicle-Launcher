@@ -20,9 +20,23 @@ Nothing from the games is included or downloaded. You supply your own disc.
 
 ## Where it stands
 
-Phase 0 of [the plan](docs/PLAN.md): the two games, the Chronicle home and each game's page. **Get the game**
-opens the port's GitHub (the launcher ships no builds yet), and **Choose a build** remembers the folder with your
-build of the port. Setting up from your disc and playing come next.
+Phase 2 of [the plan](docs/PLAN.md), for Dark Cloud:
+
+- **Get the game** opens the port's GitHub (the launcher ships no builds yet); **Choose a build** remembers the
+  folder with your build of the port, or your checkout of it.
+- **Your disc**: the launcher looks in a folder, two folders down, for an `.iso` that boots Dark Cloud
+  (`SCUS_971.11`), and names its release the way the port's extractor does. A `.chd` is pointed out, to be made an
+  image first.
+- **Set up from your disc** runs the port's `dcdata extract`, the gold moon waxing as it goes, and can be cancelled.
+- **Play** starts `darkcloud` on the launcher's own data and save folders. A crash is kept on the page, with **Copy
+  report** and **Save report** (home folder written `~`), until the game next closes cleanly.
+- **Saves**: each save's play time and day, read from its `save.dat`; **Back up now**, and restoring a backup (what
+  was there is backed up first).
+
+This has been run end to end with stand-ins for `dcdata` and `darkcloud` (`core/tests/flow.rs`, and the app itself
+on a virtual display), not yet with a real disc. Dark Chronicle comes in phase 4.
+
+![Setting up: the gold moon waxing](docs/screenshots/setting-up.png)
 
 ## Building
 

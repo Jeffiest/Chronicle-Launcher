@@ -22,9 +22,12 @@ pub fn root() -> PathBuf {
 /// its own fallbacks never pick another folder.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GameDirs {
+    /// The game's own folder, holding all the others.
+    pub root: PathBuf,
     pub data: PathBuf,
     pub save: PathBuf,
     pub mods: PathBuf,
+    pub logs: PathBuf,
 }
 
 pub fn game_dirs(root: &Path, id: &str) -> GameDirs {
@@ -33,6 +36,8 @@ pub fn game_dirs(root: &Path, id: &str) -> GameDirs {
         data: game.join("data"),
         save: game.join("save"),
         mods: game.join("mods"),
+        logs: game.join("logs"),
+        root: game,
     }
 }
 
@@ -46,5 +51,7 @@ mod tests {
         assert_eq!(dirs.data, Path::new("/r/games/chronicle-two/data"));
         assert_eq!(dirs.save, Path::new("/r/games/chronicle-two/save"));
         assert_eq!(dirs.mods, Path::new("/r/games/chronicle-two/mods"));
+        assert_eq!(dirs.logs, Path::new("/r/games/chronicle-two/logs"));
+        assert_eq!(dirs.root, Path::new("/r/games/chronicle-two"));
     }
 }

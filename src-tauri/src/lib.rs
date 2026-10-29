@@ -1,28 +1,394 @@
-//! The launcher's commands. Each one is a thin call into `chronicle-launcher-core`.
+//! The launcher's commands. Each is a thin call into `chronicle-launcher-core`; set-up and play run on threads of
+//! their own and tell the page how they go with events:
+//!
+//! - `activity` (a `GameView`): a game started or stopped setting up or playing, or its set-up moved on a stage;
+//! - `setup-line` (`{ id, line }`): a line the extractor printed;
+//! - `setup-finished` (`{ id, ok, message }`);
+//! - `game-ended` (`{ id, outcome }`).
 
-use chronicle_launcher_core::{library, paths};
-use std::path::PathBuf;
+use chronicle_launcher_core::library::{self, Activity, GameView};
+use chronicle_launcher_core::{discs, games, paths, play, process, saves, setup};
+use serde::Serialize;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use tauri::{AppHandle, Emitter, Manager, State};
 
-#[tauri::command]
-fn library() -> Result<Vec<library::GameView>, String> {
-    library::library(&paths::root()).map_err(|e| e.to_string())
+/// What runs for each game: its process, and what it is doing.
+#[derive(Default)]
+struct Runs(Mutex<HashMap<String, Run>>);
+
+struct Run {
+    child: Arc<Mutex<std::process::Child>>,
+    activity: Activity,
+}
+
+impl Runs {
+    fn activity(&self, id: &str) -> Activity {
+        self.0
+            .lock()
+            .unwrap()
+            .get(id)
+            .map(|r| r.activity.clone())
+            .unwrap_or_default()
+    }
+
+    fn busy(&self, id: &str) -> Result<(), String> {
+        match self.activity(id) {
+            Activity::Idle => Ok(()),
+            Activity::Playing => Err("The game is running. Close it first.".into()),
+            Activity::SettingUp { .. } => Err("The game is being set up. Wait for it, or cancel it.".into()),
+        }
+    }
+}
+
+fn root() -> PathBuf {
+    paths::root()
+}
+
+fn game(id: &str) -> Result<&'static games::Game, String> {
+    games::find(id).ok_or_else(|| format!("No game called {id}"))
+}
+
+fn view(runs: &Runs, id: &str) -> Result<GameView, String> {
+    let mut view = library::view_of(&root(), id)?;
+    view.activity = runs.activity(id);
+    Ok(view)
+}
+
+fn announce(app: &AppHandle, id: &str) {
+    if let Ok(view) = view(&app.state::<Runs>(), id) {
+        let _ = app.emit("activity", view);
+    }
 }
 
 #[tauri::command]
-fn choose_build(id: String, folder: PathBuf) -> Result<library::GameView, String> {
-    library::choose_build(&paths::root(), &id, &folder)
+fn library(runs: State<Runs>) -> Result<Vec<GameView>, String> {
+    games::all().iter().map(|g| view(&runs, &g.id)).collect()
 }
 
 #[tauri::command]
-fn forget_build(id: String) -> Result<library::GameView, String> {
-    library::forget_build(&paths::root(), &id)
+fn choose_build(runs: State<Runs>, id: String, folder: PathBuf) -> Result<GameView, String> {
+    runs.busy(&id)?;
+    library::choose_build(&root(), &id, &folder)?;
+    view(&runs, &id)
+}
+
+#[tauri::command]
+fn forget_build(runs: State<Runs>, id: String) -> Result<GameView, String> {
+    runs.busy(&id)?;
+    library::forget_build(&root(), &id)?;
+    view(&runs, &id)
+}
+
+#[tauri::command]
+fn scan_discs(id: String, folder: PathBuf) -> Result<discs::Scan, String> {
+    let game = game(&id)?;
+    library::remember_disc_folder(&root(), &id, &folder)?;
+    Ok(discs::scan(game, &folder))
+}
+
+#[derive(Clone, Serialize)]
+struct Line<'a> {
+    id: &'a str,
+    line: &'a str,
+}
+
+#[derive(Clone, Serialize)]
+struct Finished {
+    id: String,
+    ok: bool,
+    message: String,
+}
+
+#[tauri::command]
+fn set_up(app: AppHandle, runs: State<Runs>, id: String, disc: PathBuf) -> Result<GameView, String> {
+    runs.busy(&id)?;
+    let game = game(&id)?;
+    let current = library::view_of(&root(), &id)?;
+    let build = current.build.ok_or("Choose a build first.")?;
+    let found = discs::identify(game, &disc)?;
+    let dirs = paths::game_dirs(&root(), &id);
+    let child = process::spawn(setup::command(&build, &disc, &dirs))
+        .map_err(|e| format!("{} could not start: {e}", build.extractor.display()))?;
+    let child = Arc::new(Mutex::new(child));
+    let starting = Activity::SettingUp {
+        stage: setup::Stage::Starting,
+        fraction: setup::Stage::Starting.fraction(),
+    };
+    runs.0.lock().unwrap().insert(
+        id.clone(),
+        Run {
+            child: child.clone(),
+            activity: starting,
+        },
+    );
+
+    let log = dirs.logs.join(format!("setup-{}.log", saves::now()));
+    std::thread::spawn(move || {
+        let runs = app.state::<Runs>();
+        let mut last = String::new();
+        let mut release = found.release;
+        let ended = process::follow(&child, &log, |line| {
+            if let Some(named) = setup::release_in_line(line) {
+                release = Some(named.to_string());
+            }
+            let _ = app.emit("setup-line", Line { id: &id, line });
+            if !line.trim().is_empty() {
+                last = line.to_string();
+            }
+            if let Some(stage) = setup::Stage::of_line(line) {
+                if let Some(run) = runs.0.lock().unwrap().get_mut(&id) {
+                    run.activity = Activity::SettingUp {
+                        stage,
+                        fraction: stage.fraction(),
+                    };
+                }
+                announce(&app, &id);
+            }
+        });
+        let finished = match ended {
+            Ok(ended) if ended.success() => {
+                let done = setup::SetUp {
+                    disc,
+                    release,
+                    build: build.dir,
+                    finished: saves::now(),
+                };
+                match setup::finish(&dirs, &done) {
+                    Ok(()) => Finished {
+                        id: id.clone(),
+                        ok: true,
+                        message: "Set up. Ready to play.".into(),
+                    },
+                    Err(e) => Finished {
+                        id: id.clone(),
+                        ok: false,
+                        message: format!("Could not record the set-up: {e}"),
+                    },
+                }
+            }
+            Ok(ended) if ended.code.is_none() => Finished {
+                id: id.clone(),
+                ok: false,
+                message: "Set-up was stopped.".into(),
+            },
+            Ok(_) => Finished {
+                id: id.clone(),
+                ok: false,
+                message: format!("Set-up failed: {last}"),
+            },
+            Err(e) => Finished {
+                id: id.clone(),
+                ok: false,
+                message: format!("Set-up failed: {e}"),
+            },
+        };
+        runs.0.lock().unwrap().remove(&id);
+        let _ = app.emit("setup-finished", finished);
+        announce(&app, &id);
+    });
+    view(&runs, &current.game.id)
+}
+
+#[tauri::command]
+fn cancel_set_up(runs: State<Runs>, id: String) {
+    if let Some(run) = runs.0.lock().unwrap().get(&id) {
+        if matches!(run.activity, Activity::SettingUp { .. }) {
+            process::kill(&run.child);
+        }
+    }
+}
+
+#[tauri::command]
+fn remove_set_up(runs: State<Runs>, id: String) -> Result<GameView, String> {
+    runs.busy(&id)?;
+    setup::remove(&paths::game_dirs(&root(), &id)).map_err(|e| e.to_string())?;
+    view(&runs, &id)
+}
+
+#[derive(Clone, Serialize)]
+struct GameEnded {
+    id: String,
+    outcome: play::Outcome,
+}
+
+#[tauri::command]
+fn play(app: AppHandle, runs: State<Runs>, id: String) -> Result<GameView, String> {
+    runs.busy(&id)?;
+    let current = library::view_of(&root(), &id)?;
+    let build = current.build.ok_or("Choose a build first.")?;
+    if current.set_up.is_none() {
+        return Err("Set the game up from your disc first.".into());
+    }
+    let dirs = paths::game_dirs(&root(), &id);
+    std::fs::create_dir_all(&dirs.save).map_err(|e| e.to_string())?;
+    let child = process::spawn(play::command(&build, &dirs))
+        .map_err(|e| format!("{} could not start: {e}", build.executable.display()))?;
+    let child = Arc::new(Mutex::new(child));
+    runs.0.lock().unwrap().insert(
+        id.clone(),
+        Run {
+            child: child.clone(),
+            activity: Activity::Playing,
+        },
+    );
+
+    let started = saves::now();
+    let log_name = format!("play-{started}.log");
+    let log = dirs.logs.join(&log_name);
+    let thread_id = id.clone();
+    std::thread::spawn(move || {
+        let ended = process::follow(&child, &log, |_| {});
+        let outcome = match ended {
+            Ok(ended) => {
+                let outcome = play::outcome(&ended);
+                match &outcome {
+                    play::Outcome::Closed => play::clear_crash(&dirs.logs),
+                    play::Outcome::NoData => setup::forget(&dirs),
+                    play::Outcome::Crashed { what } => {
+                        let crash = play::Crash {
+                            what: what.clone(),
+                            when: saves::now(),
+                            log: log_name,
+                            ended_code: ended.code,
+                            ended_signal: ended.signal,
+                        };
+                        let _ = play::record_crash(&dirs.logs, &crash);
+                    }
+                }
+                outcome
+            }
+            Err(e) => play::Outcome::Crashed {
+                what: format!("The launcher lost track of it ({e})"),
+            },
+        };
+        app.state::<Runs>().0.lock().unwrap().remove(&thread_id);
+        let _ = app.emit(
+            "game-ended",
+            GameEnded {
+                id: thread_id.clone(),
+                outcome,
+            },
+        );
+        announce(&app, &thread_id);
+    });
+    view(&runs, &id)
+}
+
+#[derive(Serialize)]
+struct SavesView {
+    saves: Vec<saves::Save>,
+    backups: Vec<saves::Backup>,
+}
+
+#[tauri::command]
+fn saves(id: String) -> Result<SavesView, String> {
+    game(&id)?;
+    let dirs = paths::game_dirs(&root(), &id);
+    Ok(SavesView {
+        saves: saves::list(&dirs.save),
+        backups: saves::backups(&dirs.root),
+    })
+}
+
+#[tauri::command]
+fn back_up_saves(runs: State<Runs>, id: String) -> Result<Option<saves::Backup>, String> {
+    if matches!(runs.activity(&id), Activity::Playing) {
+        return Err("The game is running. Close it first, so its saves are not half written.".into());
+    }
+    let dirs = paths::game_dirs(&root(), &id);
+    saves::back_up(&dirs.root, &dirs.save).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn restore_saves(runs: State<Runs>, id: String, backup: String) -> Result<(), String> {
+    runs.busy(&id)?;
+    let dirs = paths::game_dirs(&root(), &id);
+    saves::restore(&dirs.root, &dirs.save, &backup)
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+fn report_text(id: &str) -> Result<String, String> {
+    let game = game(id)?;
+    let dirs = paths::game_dirs(&root(), id);
+    let crash = play::last_crash(&dirs.logs).ok_or("No crash to report.")?;
+    let log = std::fs::read_to_string(dirs.logs.join(&crash.log)).unwrap_or_default();
+    let build = library::view_of(&root(), id)?
+        .build
+        .map(|b| b.dir)
+        .unwrap_or_default();
+    let ended = process::Ended {
+        code: crash.ended_code,
+        signal: crash.ended_signal,
+    };
+    Ok(play::report(game, &build, &ended, &log, dirs_home().as_deref()))
+}
+
+fn dirs_home() -> Option<PathBuf> {
+    std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from)
+}
+
+#[tauri::command]
+fn crash_report(id: String) -> Result<String, String> {
+    report_text(&id)
+}
+
+/// Writes the report to the Downloads folder (or the game's logs folder without one) and says where.
+#[tauri::command]
+fn save_report(id: String) -> Result<String, String> {
+    let text = report_text(&id)?;
+    let dirs = paths::game_dirs(&root(), &id);
+    let folder = dirs_downloads().unwrap_or(dirs.logs);
+    let file = folder.join(format!("{id}-report-{}.txt", saves::now()));
+    std::fs::write(&file, text).map_err(|e| e.to_string())?;
+    Ok(file.display().to_string())
+}
+
+fn dirs_downloads() -> Option<PathBuf> {
+    let home = dirs_home()?;
+    let downloads = home.join("Downloads");
+    downloads.is_dir().then_some(downloads)
+}
+
+#[tauri::command]
+fn open_folder(app: AppHandle, id: String, which: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dirs = paths::game_dirs(&root(), &id);
+    let folder: &Path = match which.as_str() {
+        "saves" => &dirs.save,
+        "logs" => &dirs.logs,
+        "game" => &dirs.root,
+        _ => return Err(format!("No folder called {which}")),
+    };
+    std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
+    app.opener()
+        .open_path(folder.display().to_string(), None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 pub fn run() {
     tauri::Builder::default()
+        .manage(Runs::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![library, choose_build, forget_build])
+        .invoke_handler(tauri::generate_handler![
+            library,
+            choose_build,
+            forget_build,
+            scan_discs,
+            set_up,
+            cancel_set_up,
+            remove_set_up,
+            play,
+            saves,
+            back_up_saves,
+            restore_saves,
+            crash_report,
+            save_report,
+            open_folder,
+        ])
         .run(tauri::generate_context!())
         .expect("the launcher's window could not start");
 }

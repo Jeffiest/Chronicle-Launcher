@@ -11,6 +11,9 @@ pub struct GameConfig {
     /// The folder the player chose that holds the port's executable and extractor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub build: Option<PathBuf>,
+    /// The folder the player last looked for discs in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disc_folder: Option<PathBuf>,
     #[serde(flatten)]
     pub other: BTreeMap<String, serde_json::Value>,
 }

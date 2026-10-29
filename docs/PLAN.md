@@ -131,9 +131,9 @@ games/<id>/mods/       MoonMod packages, one folder per mod id
 
 | Step | Dark Cloud (`chronicle`) | Dark Chronicle (`chronicle-two`) |
 | --- | --- | --- |
-| Identify the disc | `SYSTEM.CNF` boot serial, then `dcdata`'s release fingerprint of `DATA.HD2` | `SYSTEM.CNF`, then `dc2data list` |
-| Set up | `dcdata extract <iso> data`, then `dcdata pack data` | `dc2data extract <iso> <root>/data` |
-| Is set-up current? | `data/languages.json` present; re-extract after a port update | `dc2data current <iso> <root>/data` (exit status) |
+| Identify the disc | `SYSTEM.CNF` boots `SCUS_971.11` (both releases), then the size and FNV-1a 64 of `DATA.HD2`, `dcdata`'s own table; the extractor's `release:` line has the last word | `SYSTEM.CNF`, then `dc2data list` |
+| Set up | `dcdata extract <iso> data` (no `pack`: the loose `data/` plays, and packing would keep the game's files twice) | `dc2data extract <iso> <root>/data` |
+| Is set-up current? | `setup.json` beside `data/`, written only after the extractor succeeded; exit status 3 from the game forgets it | `dc2data current <iso> <root>/data` (exit status) |
 | Check | none yet: show "Check" only when the port has one | `dc2data check <root>/data` |
 | Play | `darkcloud --data <root>/data --save <root>/save` | `darkchronicle --data <root>/data --save <root>/save` |
 | Settings file | `<save>/config.json` (documented keys and defaults) | `config.json` beside the save root (its `docs/PC.md`) |
@@ -230,7 +230,7 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 | --- | --- | --- |
 | 0 | Our own skeleton: Tauri 2 + Svelte 5 + Rust core, the two games as data, the Chronicle home and a game page with **Get the game** / **Choose a build**, tokens and style tests, CI | `yarn verify` and `cargo test` pass; CI builds the app; the page opens in a browser with mock data |
 | 1 | The look: the games' materials, fonts, logo and icon (started), backgrounds from our play, the gold-moon progress, `docs/STYLE.md` | screenshots of the Library and a game page reviewed |
-| 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build | a PAL and an NTSC 1.02 disc each go from folder to playing |
+| 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build. **Built**; tested with stand-ins for the port's programs, not yet with a real disc | a PAL and an NTSC 1.02 disc each go from folder to playing |
 | 3 | MoonMod: discover, enable, settings, install from zip/link, bundled mods, Mods switch | every bundled mod toggles in the launcher and the in-game manager agrees |
 | 4 | Dark Chronicle: `dc2data` set-up and check, play, saves, MoonMod on `chronicle-two` | a PAL disc goes from folder to playing with a mod on |
 | 5 | Builds and releases: `ports.yml` (Windows x64, Linux x64; macOS arm64 after), signed launcher installers, self-update | held for later; needs the ports' license OK (§3) |

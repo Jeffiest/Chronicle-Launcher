@@ -9,6 +9,15 @@ pub struct Disc {
     pub file: String,
 }
 
+/// A release the port's extractor knows, by the size and FNV-1a 64 hash of the disc's index file.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Release {
+    pub name: String,
+    pub index_size: u64,
+    /// Hexadecimal, as `dcdata.hpp` writes it.
+    pub index_fnv: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Game {
     pub id: String,
@@ -21,6 +30,13 @@ pub struct Game {
     pub extractor: String,
     pub hero: String,
     pub discs: Vec<Disc>,
+    /// What the disc's SYSTEM.CNF boots; `None` while the launcher cannot set the game up yet.
+    #[serde(default)]
+    pub boot: Option<String>,
+    #[serde(default)]
+    pub index_file: Option<String>,
+    #[serde(default)]
+    pub releases: Vec<Release>,
 }
 
 const SOURCES: [&str; 2] = [
@@ -63,6 +79,20 @@ mod tests {
                 ["chronicle", "chronicle-two"].contains(&game.id.as_str()),
                 "{}",
                 game.id
+            );
+        }
+    }
+
+    #[test]
+    fn dark_cloud_names_its_releases() {
+        let game = find("chronicle").unwrap();
+        assert_eq!(game.boot.as_deref(), Some("SCUS_971.11"));
+        assert_eq!(game.releases.len(), 2);
+        for release in &game.releases {
+            assert!(
+                u64::from_str_radix(&release.index_fnv, 16).is_ok(),
+                "{}",
+                release.index_fnv
             );
         }
     }

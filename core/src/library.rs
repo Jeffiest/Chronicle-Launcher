@@ -1,6 +1,6 @@
 //! Each game's state, and the one next step its page offers.
 
-use crate::{config, games, paths, port};
+use crate::{config, games, paths, play, port, setup};
 use serde::Serialize;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -14,6 +14,19 @@ pub enum Next {
     Play,
 }
 
+/// What the launcher is doing with a game right now. The core never sees this; the app fills it in.
+#[derive(Debug, Clone, Default, Serialize, PartialEq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum Activity {
+    #[default]
+    Idle,
+    SettingUp {
+        stage: setup::Stage,
+        fraction: f32,
+    },
+    Playing,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct GameView {
     pub game: games::Game,
@@ -21,18 +34,15 @@ pub struct GameView {
     pub build: Option<port::Build>,
     /// Why the chosen build folder no longer works, when it does not.
     pub build_problem: Option<String>,
+    /// Whether the launcher knows how to set this game up yet (its disc's boot program is known).
+    pub can_set_up: bool,
+    pub set_up: Option<setup::SetUp>,
+    /// The folder the player last looked for discs in.
+    pub disc_folder: Option<PathBuf>,
+    pub last_crash: Option<play::Crash>,
+    pub activity: Activity,
     pub data: PathBuf,
     pub save: PathBuf,
-}
-
-/// Set up is done when the extractor's output is there: Chronicle's `data.zip` or `data/`, Chronicle Two's
-/// `data.json` marker beside them. The check that it is current comes with set-up itself.
-fn has_data(game: &games::Game, data: &Path) -> bool {
-    let parent = data.parent().unwrap_or(data);
-    match game.id.as_str() {
-        "chronicle-two" => parent.join("data.json").is_file(),
-        _ => parent.join("data.zip").is_file() || data.join("languages.json").is_file(),
-    }
 }
 
 pub fn view(root: &Path, config: &config::Config, game: &games::Game) -> GameView {
@@ -43,16 +53,23 @@ pub fn view(root: &Path, config: &config::Config, game: &games::Game) -> GameVie
         Some(Err(problem)) => (None, Some(problem.to_string())),
         None => (None, None),
     };
-    let next = match (&build, has_data(game, &dirs.data)) {
+    let set_up = setup::read(&dirs);
+    let next = match (&build, &set_up) {
         (None, _) => Next::GetTheGame,
-        (Some(_), false) => Next::SetUp,
-        (Some(_), true) => Next::Play,
+        (Some(_), None) => Next::SetUp,
+        (Some(_), Some(_)) => Next::Play,
     };
+    let game_config = config.games.get(&game.id);
     GameView {
         game: game.clone(),
         next,
         build,
         build_problem,
+        can_set_up: game.boot.is_some(),
+        set_up,
+        disc_folder: game_config.and_then(|c| c.disc_folder.clone()),
+        last_crash: play::last_crash(&dirs.logs),
+        activity: Activity::Idle,
         data: dirs.data,
         save: dirs.save,
     }
@@ -73,6 +90,19 @@ pub fn choose_build(root: &Path, id: &str, folder: &Path) -> Result<GameView, St
     let mut config = config::load(root).map_err(|e| e.to_string())?;
     config.games.entry(id.to_string()).or_default().build = Some(folder.to_path_buf());
     config::save(root, &config).map_err(|e| e.to_string())?;
+    Ok(view(root, &config, game))
+}
+
+/// Remembers where the player keeps their discs, so the next look starts there.
+pub fn remember_disc_folder(root: &Path, id: &str, folder: &Path) -> Result<(), String> {
+    let mut config = config::load(root).map_err(|e| e.to_string())?;
+    config.games.entry(id.to_string()).or_default().disc_folder = Some(folder.to_path_buf());
+    config::save(root, &config).map_err(|e| e.to_string())
+}
+
+pub fn view_of(root: &Path, id: &str) -> Result<GameView, String> {
+    let game = games::find(id).ok_or_else(|| format!("No game called {id}"))?;
+    let config = config::load(root).map_err(|e| e.to_string())?;
     Ok(view(root, &config, game))
 }
 
@@ -119,8 +149,15 @@ mod tests {
         fake_build(build.path(), "darkchronicle", "dc2data");
         let view = choose_build(root.path(), "chronicle-two", build.path()).unwrap();
         assert_eq!(view.next, Next::SetUp);
-        std::fs::create_dir_all(view.data.parent().unwrap()).unwrap();
-        std::fs::write(view.data.parent().unwrap().join("data.json"), b"{}").unwrap();
+        let dirs = paths::game_dirs(root.path(), "chronicle-two");
+        std::fs::create_dir_all(&dirs.data).unwrap();
+        let done = setup::SetUp {
+            disc: "/d.iso".into(),
+            release: None,
+            build: build.path().into(),
+            finished: 1,
+        };
+        setup::finish(&dirs, &done).unwrap();
         let views = library(root.path()).unwrap();
         assert_eq!(views[1].next, Next::Play);
         assert_eq!(views[0].next, Next::GetTheGame);
