@@ -1,0 +1,287 @@
+/* Chronicle Launcher's look: docs/STYLE.md. Every colour is a token here, on :root, and nowhere else
+   (src/lib/stylesheets.test.ts). The palette is DC_Web's: near-black ink, a lifted panel, soft white text, Dark
+   Cloud gold for the one main action, and a pale moon blue for what belongs to MoonMod. */
+
+:root {
+  color-scheme: dark;
+
+  --ink: #0d0d12;
+  --ink-deep: #08080c;
+  --panel: #17171f;
+  --panel-hi: #1f1f2a;
+
+  --brand: #a8842f;
+  --amber: #c9a24a;
+  --gold: #e6cf8f;
+  --moon: #b9c4e6;
+
+  --text: #e6e6ea;
+  --body: #c8c8d0;
+  --lav: #c9c9d6;
+  --soft: #aaaabb;
+  --dim: #8a8a96;
+
+  --line: rgb(170 170 187 / 0.18);
+  --line-strong: rgb(170 170 187 / 0.32);
+
+  --bar-top: #d4b05a;
+  --bar-bottom: #b38a32;
+  --bar-ink: #111111;
+
+  --ok: #8fd694;
+  --warn: var(--amber);
+  --err: #ff8a7a;
+
+  --shade: rgb(8 8 12 / 0.72);
+  --star: rgb(230 230 234 / 0.75);
+  --star-faint: rgb(230 230 234 / 0.35);
+
+  /* Chapter I, Dark Cloud: night over Norune. Chapter II, Dark Chronicle: Palm Brinks at dusk. */
+  --dc1-from: #1b1f3a;
+  --dc1-to: #0d0d12;
+  --dc1-glow: rgb(185 196 230 / 0.16);
+  --dc1-border: #c9a24a;
+  --dc2-from: #3a2a1b;
+  --dc2-to: #0d0d12;
+  --dc2-glow: rgb(230 170 90 / 0.18);
+  --dc2-border: #b8925a;
+
+  --font-head: "Cinzel", Georgia, serif;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+
+  --radius: 14px;
+  --radius-small: 8px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --fast: 120ms;
+  --medium: 240ms;
+  --slow: 480ms;
+  --page-x: clamp(16px, 4vw, 48px);
+  --page-top: 28px;
+  --page-gap: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font: 15px/1.5 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-head);
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  color: var(--body);
+}
+
+a {
+  color: var(--amber);
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* Buttons: the one main action is gold; everything else is quiet. */
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-hi);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+button.primary {
+  background: linear-gradient(var(--bar-top), var(--bar-bottom));
+  color: var(--bar-ink);
+  border-color: transparent;
+  font-weight: 600;
+  padding: 11px 26px;
+  font-size: 16px;
+}
+
+button.link {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--amber);
+}
+
+@media (hover: hover) {
+  button:not(:disabled):hover {
+    border-color: var(--amber);
+  }
+  button.primary:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+  button.link:hover {
+    text-decoration: underline;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+/* A state: a dot and a few words. */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--soft);
+}
+
+.state::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.state.ok {
+  color: var(--ok);
+}
+
+.state.warn {
+  color: var(--warn);
+}
+
+.state.err {
+  color: var(--err);
+}
+
+/* A task done in steps, in order. */
+ol.steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 0;
+  padding: 0;
+}
+
+ol.steps > li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+ol.steps > li:first-child {
+  border-top: 0;
+}
+
+ol.steps > li::before {
+  content: counter(step);
+  font-family: var(--font-head);
+  color: var(--brand);
+  font-size: 20px;
+  text-align: center;
+}
+
+ol.steps > li.done::before {
+  content: "✓";
+  color: var(--ok);
+}
+
+.rise {
+  animation: rise var(--slow) var(--ease) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* A chapter's backdrop, until there are pictures (public/img/<id>-bg.webp): Dark Cloud's night sky with its stars,
+   Dark Chronicle's warm dusk. */
+.backdrop {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.backdrop.dc1 {
+  --from: var(--dc1-from);
+  --to: var(--dc1-to);
+  --glow: var(--dc1-glow);
+  --border: var(--dc1-border);
+  background:
+    radial-gradient(1px 1px at 12% 22%, var(--star), transparent),
+    radial-gradient(1px 1px at 28% 64%, var(--star-faint), transparent),
+    radial-gradient(1.5px 1.5px at 41% 18%, var(--star), transparent),
+    radial-gradient(1px 1px at 57% 40%, var(--star-faint), transparent),
+    radial-gradient(1px 1px at 69% 12%, var(--star), transparent),
+    radial-gradient(1.5px 1.5px at 83% 33%, var(--star-faint), transparent),
+    radial-gradient(1px 1px at 91% 70%, var(--star), transparent),
+    radial-gradient(60% 50% at 78% 18%, var(--glow), transparent),
+    linear-gradient(160deg, var(--from), var(--to));
+}
+
+.backdrop.dc2 {
+  --from: var(--dc2-from);
+  --to: var(--dc2-to);
+  --glow: var(--dc2-glow);
+  --border: var(--dc2-border);
+  background:
+    radial-gradient(70% 55% at 20% 100%, var(--glow), transparent),
+    radial-gradient(40% 30% at 85% 15%, var(--glow), transparent),
+    linear-gradient(200deg, var(--from), var(--to));
+}

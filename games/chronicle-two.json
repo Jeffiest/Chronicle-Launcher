@@ -1,0 +1,12 @@
+{
+  "id": "chronicle-two",
+  "title": "Dark Chronicle",
+  "chapter": 2,
+  "port": "Chronicle Two",
+  "repository": "https://github.com/TheMoonPeople/ChronicleTwo",
+  "get_url": "https://github.com/TheMoonPeople/ChronicleTwo",
+  "executable": "darkchronicle",
+  "extractor": "dc2data",
+  "hero": "Max and Monica",
+  "discs": [{ "region": "PAL", "file": "Dark Chronicle (PAL).iso" }]
+}

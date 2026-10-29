@@ -1,0 +1,15 @@
+{
+  "id": "chronicle",
+  "title": "Dark Cloud",
+  "chapter": 1,
+  "port": "Chronicle",
+  "repository": "https://github.com/TheMoonPeople/Chronicle",
+  "get_url": "https://github.com/TheMoonPeople/Chronicle",
+  "executable": "darkcloud",
+  "extractor": "dcdata",
+  "hero": "Toan",
+  "discs": [
+    { "region": "PAL", "file": "Dark Cloud (PAL).iso" },
+    { "region": "NTSC 1.02", "file": "Dark Cloud (NTSC).iso" }
+  ]
+}

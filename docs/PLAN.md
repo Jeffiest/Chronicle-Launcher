@@ -97,7 +97,7 @@ boxes, secondary actions in a menu, removing in `--err`) and swaps its *colours*
 | `--gold` | `#ffd08a` | `#e6cf8f` | headings |
 | `--lav`, `--soft`, `--dim` | blue-lavender | `#c9c9d6`, `#aaaabb`, `#8a8a96` | DC_Web `--dim`, MoonMod's label grey |
 | `--text`, `--body` | `#e8f0ff`, `#c3cdea` | `#e6e6ea`, `#c8c8d0` | DC_Web `--fg` |
-| `--bar-top`, `--bar-bottom` | orange | `#d4b05a`, `#b38a32` | header bar, primary buttons: gold, not orange |
+| `--bar-top`, `--bar-bottom` | orange | `#d4b05a`, `#b38a32` | primary buttons: gold, not orange. The header stays night-dark with a gold rule |
 | `--bar-ink` | `#2a1800` | `#111111` | text on gold (DC_Web buttons use `#111`) |
 | `--ok`, `--warn`, `--err` | | `#8fd694`, `--amber`, `#ff8a7a` | unchanged |
 
