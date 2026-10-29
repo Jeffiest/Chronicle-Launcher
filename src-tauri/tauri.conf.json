@@ -36,6 +36,20 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "Jeffiest",
+    "homepage": "https://github.com/Jeffiest/Chronicle-Launcher",
+    "copyright": "The Chronicle Launcher's contributors. Dark Cloud and Dark Chronicle are Level-5's; no game data is included.",
+    "longDescription": "Sets Dark Cloud and Dark Chronicle up from your own PAL discs with The Moon People's native ports, plays them, and manages MoonMod mods. Nothing from the games is included or downloaded.",
+    "linux": {
+      "deb": {
+        "section": "games"
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   }
 }
