@@ -24,11 +24,21 @@ describe("a game's next step", () => {
     expect(mainButton(await api.play("chronicle"))).toBe("Playing");
   });
 
-  it("does not offer set-up for a game the launcher cannot set up yet", async () => {
+  it("takes Dark Chronicle's PAL disc to Play, with the time left as it goes", async () => {
     const api = mockApi(5);
     await api.chooseBuild("chronicle-two");
-    const view = (await api.library())[1];
-    expect(view.can_set_up).toBe(false);
-    expect((await api.scanDiscs("chronicle-two", "~")).discs).toEqual([]);
+    const scan = await api.scanDiscs("chronicle-two", "~/Games/PS2");
+    expect(scan.discs.map((d) => d.release)).toEqual(["PAL"]);
+    expect(scan.skipped.some((s) => s.why.includes("Dark Cloud 2, the NTSC release"))).toBe(true);
+
+    const seen: string[] = [];
+    await api.on("activity", (v) => {
+      if (v.activity.kind === "setting-up") seen.push(v.activity.doing);
+    });
+    const finished = new Promise<boolean>((done) => api.on("setup-finished", ({ ok }) => done(ok)));
+    await api.setUp("chronicle-two", scan.discs[0].path);
+    expect(await finished).toBe(true);
+    expect(seen.some((doing) => doing.endsWith("left"))).toBe(true);
+    expect(mainButton((await api.library())[1])).toBe("Play");
   });
 });

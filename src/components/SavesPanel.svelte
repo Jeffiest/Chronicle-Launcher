@@ -59,7 +59,7 @@
           <span class="name">{save.number ?? "Auto"}</span>
           {#if save.readable}
             <span class="time">{playTime(save.play_seconds ?? 0)}</span>
-            <span class="day">Day {save.day}</span>
+            <span class="day">{save.day === null ? "" : `Day ${save.day}`}</span>
           {:else}
             <span class="time unreadable">Not a save the launcher can read</span>
             <span></span>

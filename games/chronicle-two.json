@@ -8,5 +8,16 @@
   "executable": "darkchronicle",
   "extractor": "dc2data",
   "hero": "Max and Monica",
-  "discs": [{ "region": "PAL", "file": "Dark Chronicle (PAL).iso" }]
+  "discs": [
+    {
+      "region": "PAL",
+      "file": "Dark Chronicle (PAL).iso"
+    }
+  ],
+  "boot": "SCES_511.90",
+  "refused_boots": {
+    "SCUS_972.13": "Dark Cloud 2, the NTSC release: the launcher sets up the PAL disc only"
+  },
+  "progress": "percent",
+  "saves": "dark-chronicle"
 }

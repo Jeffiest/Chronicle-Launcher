@@ -26,6 +26,9 @@ export interface Game {
   boot?: string;
   index_file?: string;
   releases?: Release[];
+  refused_boots?: Record<string, string>;
+  progress?: "stages" | "percent";
+  saves?: "dark-cloud" | "dark-chronicle";
 }
 
 export type Next = "get-the-game" | "set-up" | "play";
@@ -52,10 +55,8 @@ export interface GameView {
   save: string;
 }
 
-export type Stage = "starting" | "reading-disc" | "sorting" | "checking" | "preparing" | "done";
-
 export type Activity =
-  { kind: "idle" } | { kind: "setting-up"; stage: Stage; fraction: number } | { kind: "playing" };
+  { kind: "idle" } | { kind: "setting-up"; fraction: number; doing: string } | { kind: "playing" };
 
 export interface SetUp {
   disc: string;

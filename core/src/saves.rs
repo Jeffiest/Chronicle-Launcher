@@ -1,6 +1,9 @@
-//! Dark Cloud's saves: `<save>/saves/<n>/save.dat` and `saves/autosave/save.dat`, each retail's card image
-//! (Chronicle `docs/PC.md`, "Saves and host files"), and backups of the whole `saves/` folder.
+//! The games' saves, and backups of the whole `<save>/saves/` folder. Dark Cloud keeps `saves/<n>/save.dat` and
+//! `saves/autosave/save.dat`, each retail's card image (Chronicle `docs/PC.md`, "Saves and host files"). Dark Chronicle
+//! keeps `saves/BESCES-51190dkcl<n>.json` (File n + 1) and `saves/autosave.json`, JSON with a header the save list
+//! reads (ChronicleTwo `docs/PC.md`, "Saves").
 
+use crate::games::SaveFormat;
 use serde::Serialize;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -49,7 +52,7 @@ pub fn now() -> u64 {
     unix(Ok(SystemTime::now())).unwrap_or(0)
 }
 
-/// What the save board shows, from a `save.dat`.
+/// What Dark Cloud's save board shows, from a `save.dat`.
 pub fn read(name: &str, file: &Path) -> Save {
     let number = name.parse::<u32>().ok().filter(|_| !name.starts_with('0'));
     let modified = std::fs::metadata(file).ok().and_then(|m| unix(m.modified()));
@@ -75,15 +78,76 @@ pub fn read(name: &str, file: &Path) -> Save {
     save
 }
 
-/// The autosave first, then the numbered saves in order. Folders without a `save.dat` are left out.
-pub fn list(save_root: &Path) -> Vec<Save> {
+/// Dark Chronicle's save files are named after the card files they replace.
+const DC2_PREFIX: &str = "BESCES-51190dkcl";
+/// Dark Chronicle counts play time at PAL's 50 a second (ChronicleTwo `port/src/menu_save.cpp`).
+const DC2_TICKS: u64 = 50;
+
+/// What Dark Chronicle's save list shows, from a save's JSON header.
+pub fn read_dark_chronicle(name: &str, number: Option<u32>, file: &Path) -> Save {
+    let metadata = std::fs::metadata(file).ok();
+    let mut save = Save {
+        name: name.to_string(),
+        number,
+        play_seconds: None,
+        day: None,
+        map_no: None,
+        modified: metadata.as_ref().and_then(|m| unix(m.modified())),
+        readable: false,
+    };
+    if metadata.is_none_or(|m| m.len() > 64 << 20) {
+        return save;
+    }
+    let Some(document) = std::fs::read(file)
+        .ok()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+    else {
+        return save;
+    };
+    let header = &document["header"];
+    if document["format"] != "chronicletwo-save" || header["version"] != "dc2Ver4" {
+        return save;
+    }
+    save.readable = true;
+    save.play_seconds = header["play_time"].as_u64().map(|t| t / DC2_TICKS);
+    save.map_no = header["map_no"].as_i64().map(|m| m as i32);
+    save
+}
+
+/// The autosave first, then the numbered saves in order. Anything else in the folder is left out.
+pub fn list(format: SaveFormat, save_root: &Path) -> Vec<Save> {
     let Ok(entries) = std::fs::read_dir(save_root.join("saves")) else {
         return Vec::new();
     };
     let mut saves: Vec<Save> = entries
         .flatten()
-        .filter(|e| e.path().join("save.dat").is_file())
-        .map(|e| read(&e.file_name().to_string_lossy(), &e.path().join("save.dat")))
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().to_string();
+            match format {
+                SaveFormat::DarkCloud => {
+                    let file = e.path().join("save.dat");
+                    file.is_file().then(|| read(&name, &file))
+                }
+                SaveFormat::DarkChronicle => {
+                    if !e.path().is_file() {
+                        return None;
+                    }
+                    if name == "autosave.json" {
+                        return Some(read_dark_chronicle("autosave", None, &e.path()));
+                    }
+                    let n = name.strip_prefix(DC2_PREFIX)?.strip_suffix(".json")?;
+                    let number = n
+                        .parse::<u32>()
+                        .ok()
+                        .filter(|_| !n.starts_with('0') || n == "0")?;
+                    Some(read_dark_chronicle(
+                        &number.saturating_add(1).to_string(),
+                        Some(number + 1),
+                        &e.path(),
+                    ))
+                }
+            }
+        })
         .collect();
     saves.sort_by_key(|s| (s.name != "autosave", s.number.unwrap_or(u32::MAX), s.name.clone()));
     saves
@@ -113,9 +177,9 @@ fn backups_dir(game_dir: &Path) -> PathBuf {
 }
 
 /// Copies `saves/` into `backups/<now>/saves`. Nothing to back up is not an error: it makes no backup.
-pub fn back_up(game_dir: &Path, save_root: &Path) -> io::Result<Option<Backup>> {
+pub fn back_up(format: SaveFormat, game_dir: &Path, save_root: &Path) -> io::Result<Option<Backup>> {
     let saves = save_root.join("saves");
-    if !saves.is_dir() || list(save_root).is_empty() {
+    if !saves.is_dir() || list(format, save_root).is_empty() {
         return Ok(None);
     }
     let mut made = now();
@@ -127,12 +191,12 @@ pub fn back_up(game_dir: &Path, save_root: &Path) -> io::Result<Option<Backup>> 
     Ok(Some(Backup {
         id: made.to_string(),
         made,
-        saves: list(&folder).len(),
+        saves: list(format, &folder).len(),
     }))
 }
 
 /// Newest first.
-pub fn backups(game_dir: &Path) -> Vec<Backup> {
+pub fn backups(format: SaveFormat, game_dir: &Path) -> Vec<Backup> {
     let Ok(entries) = std::fs::read_dir(backups_dir(game_dir)) else {
         return Vec::new();
     };
@@ -143,7 +207,7 @@ pub fn backups(game_dir: &Path) -> Vec<Backup> {
             Some(Backup {
                 id: made.to_string(),
                 made,
-                saves: list(&e.path()).len(),
+                saves: list(format, &e.path()).len(),
             })
         })
         .collect();
@@ -152,7 +216,12 @@ pub fn backups(game_dir: &Path) -> Vec<Backup> {
 }
 
 /// Puts a backup's saves back. What is there now is backed up first, so a restore can itself be undone.
-pub fn restore(game_dir: &Path, save_root: &Path, id: &str) -> io::Result<Option<Backup>> {
+pub fn restore(
+    format: SaveFormat,
+    game_dir: &Path,
+    save_root: &Path,
+    id: &str,
+) -> io::Result<Option<Backup>> {
     if id.parse::<u64>().is_err() {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "no such backup"));
     }
@@ -160,7 +229,7 @@ pub fn restore(game_dir: &Path, save_root: &Path, id: &str) -> io::Result<Option
     if !source.is_dir() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "no such backup"));
     }
-    let before = back_up(game_dir, save_root)?;
+    let before = back_up(format, game_dir, save_root)?;
     let saves = save_root.join("saves");
     let staging = save_root.join("saves.restoring");
     let _ = std::fs::remove_dir_all(&staging);
@@ -200,7 +269,7 @@ mod tests {
         put(root.path(), "autosave", &save_dat(0, 2, 1));
         put(root.path(), "1", b"not a save");
         std::fs::create_dir_all(root.path().join("saves/3")).unwrap();
-        let saves = list(root.path());
+        let saves = list(SaveFormat::DarkCloud, root.path());
         let names: Vec<&str> = saves.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, ["autosave", "1", "2", "10"]);
         assert!(!saves[1].readable);
@@ -215,24 +284,75 @@ mod tests {
         let game = tempfile::tempdir().unwrap();
         let save_root = game.path().join("save");
         put(&save_root, "1", &save_dat(60, 1, 0));
-        let first = back_up(game.path(), &save_root).unwrap().unwrap();
+        let first = back_up(SaveFormat::DarkCloud, game.path(), &save_root)
+            .unwrap()
+            .unwrap();
         assert_eq!(first.saves, 1);
 
         put(&save_root, "1", &save_dat(120, 9, 0));
         put(&save_root, "2", &save_dat(60, 1, 0));
-        let before = restore(game.path(), &save_root, &first.id).unwrap().unwrap();
+        let before = restore(SaveFormat::DarkCloud, game.path(), &save_root, &first.id)
+            .unwrap()
+            .unwrap();
         assert_eq!(before.saves, 2);
-        let now = list(&save_root);
+        let now = list(SaveFormat::DarkCloud, &save_root);
         assert_eq!(now.len(), 1);
         assert_eq!(now[0].day, Some(1));
-        assert_eq!(backups(game.path()).len(), 2);
-        assert_eq!(backups(game.path())[0].id, before.id);
+        assert_eq!(backups(SaveFormat::DarkCloud, game.path()).len(), 2);
+        assert_eq!(backups(SaveFormat::DarkCloud, game.path())[0].id, before.id);
     }
 
     #[test]
     fn nothing_to_back_up_makes_no_backup() {
         let game = tempfile::tempdir().unwrap();
-        assert_eq!(back_up(game.path(), &game.path().join("save")).unwrap(), None);
-        assert!(restore(game.path(), &game.path().join("save"), "../x").is_err());
+        assert_eq!(
+            back_up(SaveFormat::DarkCloud, game.path(), &game.path().join("save")).unwrap(),
+            None
+        );
+        assert!(restore(
+            SaveFormat::DarkCloud,
+            game.path(),
+            &game.path().join("save"),
+            "../x"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn reads_dark_chronicles_save_list() {
+        let root = tempfile::tempdir().unwrap();
+        let saves = root.path().join("saves");
+        std::fs::create_dir_all(&saves).unwrap();
+        let save = |play_time: u64, map: i64| {
+            serde_json::json!({
+                "format": "chronicletwo-save", "schema_version": 1,
+                "header": {"version": "dc2Ver4", "map_no": map, "play_time": play_time, "game_progress": 3},
+                "save": {}, "checksum": "crc32:00000000"
+            })
+            .to_string()
+        };
+        std::fs::write(saves.join("BESCES-51190dkcl0.json"), save(50 * 3600, 10)).unwrap();
+        std::fs::write(saves.join("BESCES-51190dkcl11.json"), save(50 * 61, 2)).unwrap();
+        std::fs::write(saves.join("autosave.json"), save(50, 10)).unwrap();
+        std::fs::write(saves.join("BESCES-51190dkcl2.json"), "{ not json").unwrap();
+        std::fs::write(saves.join("BESCES-51190dkcl3.json.0123456789abcdef.tmp"), "").unwrap();
+        std::fs::write(saves.join("notes.txt"), "").unwrap();
+
+        let list = list(SaveFormat::DarkChronicle, root.path());
+        let names: Vec<&str> = list.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(names, ["autosave", "1", "3", "12"]);
+        assert_eq!(list[1].play_seconds, Some(3600));
+        assert_eq!(list[1].map_no, Some(10));
+        assert_eq!(list[1].day, None);
+        assert!(!list[2].readable);
+        assert_eq!(list[3].play_seconds, Some(61));
+        assert_eq!(list[0].number, None);
+        assert_eq!(
+            back_up(SaveFormat::DarkChronicle, root.path(), root.path())
+                .unwrap()
+                .unwrap()
+                .saves,
+            4
+        );
     }
 }

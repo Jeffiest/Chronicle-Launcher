@@ -20,29 +20,33 @@ Nothing from the games is included or downloaded. You supply your own disc.
 
 ## Where it stands
 
-Phase 2 of [the plan](docs/PLAN.md), for Dark Cloud:
+Both games go from **Get the game** to **Set up from your disc** to **Play**, with Moon Factory for their mods:
 
 - **Get the game** opens the port's GitHub (the launcher ships no builds yet); **Choose a build** remembers the
   folder with your build of the port, or your checkout of it.
-- **Your disc**: the launcher looks in a folder, two folders down, for an `.iso` of Dark Cloud's PAL release (the
-  July 12, 2001 prototype the port is built against), told the way the port's extractor tells it. NTSC discs, and
-  releases it does not know, are named and turned away. A `.chd` is pointed out, to be made an image first.
-- **Set up from your disc** runs the port's `dcdata extract`, the gold moon waxing as it goes, and can be cancelled.
-- **Play** starts `darkcloud` on the launcher's own data and save folders. A crash is kept on the page, with **Copy
-  report** and **Save report** (home folder written `~`), until the game next closes cleanly.
-- **Saves**: each save's play time and day, read from its `save.dat`; **Back up now**, and restoring a backup (what
-  was there is backed up first).
+- **Your disc**: the launcher looks in a folder, two folders down, for the game's PAL disc image. Dark Cloud's is
+  told by its index, as the port's extractor tells it (the July 12, 2001 prototype the port is built against); Dark
+  Chronicle's by the program it boots. NTSC discs, and releases it does not know, are named and turned away. A
+  `.chd` is pointed out, to be made an image first.
+- **Set up from your disc** runs the port's own extractor (`dcdata` or `dc2data`), the gold moon waxing as it goes:
+  by stage for Dark Cloud, by `dc2data`'s own percentage and time left for Dark Chronicle. It can be cancelled.
+- **Play** starts the port on the launcher's own data and save folders. A crash is kept on the page, with **Copy
+  report** and **Save report** (home folder written `~`; Dark Chronicle's own crash report is included), until the
+  game next closes cleanly.
+- **Saves**: each save's play time (and Dark Cloud's day), read from the game's own files; **Back up now**, and
+  restoring a backup (what was there is backed up first).
+- **Moon Factory**: the game's MoonMod mods, from the same folder the game reads, each with its switch, its
+  settings (switches, choices, sliders, from its own `mod.json`) and what it is allowed to do in plain words.
+  Choices go to the same `profile.json` the in-game Mod Manager uses. **Add a mod** takes a `.zip` or a folder and
+  shows what it is before installing it. The **Mods** switch beside Play is off by default: the game then starts
+  with `MOONMOD_NO_MODS=1`, which needs MoonMod's `launcher-no-mods` change in the build.
 
-Phase 3, Moon Factory, for Dark Cloud: the game's MoonMod mods, from the same folder the game reads, each with
-its switch, its settings (switches, choices, sliders, from its own `mod.json`) and what it is allowed to do in plain
-words. Choices go to the same `profile.json` the in-game Mod Manager uses. **Add a mod** takes a `.zip` or a
-folder and shows what it is before installing it. The **Mods** switch beside Play is off by default: the game then
-starts with `MOONMOD_NO_MODS=1`, which needs MoonMod's `launcher-no-mods` change in the build.
+Every step has been run end to end with stand-ins for the ports' programs (`core/tests/flow.rs`, and the app
+itself on a virtual display), not yet with a real disc.
 
-This has been run end to end with stand-ins for `dcdata` and `darkcloud` (`core/tests/flow.rs`, and the app itself
-on a virtual display), not yet with a real disc. Dark Chronicle comes in phase 4.
-
-![Setting up: the gold moon waxing](docs/screenshots/setting-up.png)
+| Setting up Dark Chronicle                                                                       | Dark Cloud, after a crash                                                               |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![The gold moon waxing with dc2data's progress](docs/screenshots/dark-chronicle-setting-up.png) | ![Dark Cloud's page with a crash notice and its saves](docs/screenshots/dark-cloud.png) |
 
 ## Building
 

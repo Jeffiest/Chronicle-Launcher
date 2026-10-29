@@ -1,7 +1,7 @@
 // The launcher's commands and events. In the app they go to Rust (src-tauri/src/lib.rs); in a plain browser
 // (npm run dev) they are mocked here, so the pages can be worked on without a build of the app or a disc.
 
-import type { Backup, Events, GameView, Mod, ModPreview, Save, SavesView, Scan, Stage } from "./types";
+import type { Backup, Events, GameView, Mod, ModPreview, Save, SavesView, Scan } from "./types";
 import { GAMES } from "./games";
 
 const inApp = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -108,18 +108,27 @@ export function mockApi(tick = 700): Api {
   const setUp = new Map<string, { disc: string; release: string | null }>();
   const crashed = new Map<string, number>();
   const playing = new Set<string>();
-  const stages = new Map<string, Stage>();
+  const stages = new Map<string, number>();
   const plays = new Map<string, number>();
   const listeners: { [K in keyof Events]?: Listener<K>[] } = {};
   const emit = <K extends keyof Events>(event: K, payload: Events[K]) =>
     (listeners[event] as Listener<K>[] | undefined)?.forEach((l) => l(payload));
-  const fraction: Record<Stage, number> = {
-    starting: 0.02,
-    "reading-disc": 0.15,
-    sorting: 0.55,
-    checking: 0.65,
-    preparing: 0.75,
-    done: 1,
+  // What each game's extractor reports as it goes: dcdata by stage, dc2data by percentage with the time left.
+  const steps: Record<string, { fraction: number; doing: string }[]> = {
+    chronicle: [
+      { fraction: 0.02, doing: "Starting the extractor" },
+      { fraction: 0.15, doing: "Reading your disc" },
+      { fraction: 0.55, doing: "Sorting the game's files" },
+      { fraction: 0.65, doing: "Checking every file" },
+      { fraction: 0.75, doing: "Preparing textures, models and sound" },
+    ],
+    "chronicle-two": [
+      { fraction: 0.02, doing: "Starting the extractor" },
+      { fraction: 0.07, doing: "Reading your disc" },
+      { fraction: 0.42, doing: "Converting textures, sound, movies and models, about 2:10 left" },
+      { fraction: 0.81, doing: "Checking every file, about 0:40 left" },
+      { fraction: 0.97, doing: "Writing the game's archive" },
+    ],
   };
   const saves: Save[] = [
     {
@@ -226,7 +235,7 @@ export function mockApi(tick = 700): Api {
     const game = GAMES.find((g) => g.id === id)!;
     const build = builds.has(id);
     const done = setUp.get(id);
-    const stage = stages.get(id);
+    const step = stages.get(id);
     const when = crashed.get(id);
     return {
       game,
@@ -246,11 +255,12 @@ export function mockApi(tick = 700): Api {
               ended_code: null,
               ended_signal: 11,
             },
-      activity: stage
-        ? { kind: "setting-up", stage, fraction: fraction[stage] }
-        : playing.has(id)
-          ? { kind: "playing" }
-          : { kind: "idle" },
+      activity:
+        step !== undefined
+          ? { kind: "setting-up", ...steps[id][step] }
+          : playing.has(id)
+            ? { kind: "playing" }
+            : { kind: "idle" },
       mods_on: modsOn.has(id),
       mods_dir: `~/${game.port}/mods`,
       data: `~/.local/share/chronicle-launcher/games/${id}/data`,
@@ -264,19 +274,23 @@ export function mockApi(tick = 700): Api {
           discs: [
             {
               path: `~/Games/PS2/${game.discs[0].file}`,
-              release: game.releases?.find((r) => !r.refused)?.name ?? null,
+              // As the core: a game told by its boot program alone is its disc's region.
+              release: game.index_file
+                ? (game.releases?.find((r) => !r.refused)?.name ?? null)
+                : game.discs[0].region,
             },
           ],
           skipped: [
             { path: "~/Games/PS2/Other Game.iso", why: "another game's disc (it boots SLUS_123.45)" },
-            ...(id === "chronicle"
-              ? [
-                  {
-                    path: "~/Games/PS2/Dark Cloud (USA).iso",
-                    why: "the NTSC release: the launcher sets up the PAL disc only",
-                  },
-                ]
-              : []),
+            id === "chronicle"
+              ? {
+                  path: "~/Games/PS2/Dark Cloud (USA).iso",
+                  why: "the NTSC release: the launcher sets up the PAL disc only",
+                }
+              : {
+                  path: "~/Games/PS2/Dark Cloud 2 (USA).iso",
+                  why: "Dark Cloud 2, the NTSC release: the launcher sets up the PAL disc only",
+                },
           ],
         }
       : { discs: [], skipped: [] };
@@ -295,12 +309,12 @@ export function mockApi(tick = 700): Api {
     pickDiscFolder: async (id) => ({ folder: "~/Games/PS2", scan: scan(id) }),
     scanDiscs: async (id) => scan(id),
     async setUp(id, disc) {
-      const order: Stage[] = ["starting", "reading-disc", "sorting", "checking", "preparing"];
-      order.forEach((stage, i) =>
+      const order = steps[id];
+      order.forEach((step, i) =>
         setTimeout(() => {
           if (!stages.has(id)) return;
-          stages.set(id, stage);
-          emit("setup-line", { id, line: `${stage}…` });
+          stages.set(id, i);
+          emit("setup-line", { id, line: `${step.doing}…` });
           emit("activity", view(id));
         }, i * tick),
       );
@@ -311,7 +325,7 @@ export function mockApi(tick = 700): Api {
         emit("setup-finished", { id, ok: true, message: "Set up. Ready to play." });
         emit("activity", view(id));
       }, order.length * tick);
-      stages.set(id, "starting");
+      stages.set(id, 0);
       return view(id);
     },
     async cancelSetUp(id) {

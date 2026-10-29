@@ -8,7 +8,12 @@
   "executable": "darkcloud",
   "extractor": "dcdata",
   "hero": "Toan",
-  "discs": [{ "region": "PAL", "file": "Dark Cloud (PAL).iso" }],
+  "discs": [
+    {
+      "region": "PAL",
+      "file": "Dark Cloud (PAL).iso"
+    }
+  ],
   "boot": "SCUS_971.11",
   "index_file": "DATA.HD2",
   "releases": [
@@ -23,5 +28,7 @@
       "index_fnv": "806bb1d43be8a8dc",
       "refused": "the NTSC release: the launcher sets up the PAL disc only"
     }
-  ]
+  ],
+  "progress": "stages",
+  "saves": "dark-cloud"
 }

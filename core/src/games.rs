@@ -40,6 +40,35 @@ pub struct Game {
     pub index_file: Option<String>,
     #[serde(default)]
     pub releases: Vec<Release>,
+    /// Boot programs of this game's other releases, each with why the launcher turns it away.
+    #[serde(default)]
+    pub refused_boots: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub progress: Progress,
+    #[serde(default)]
+    pub saves: SaveFormat,
+}
+
+/// How the game's extractor reports how far it has got.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum Progress {
+    /// A line as each stage starts (`dcdata`).
+    #[default]
+    Stages,
+    /// `dc2data: [ 42%] Models 42% (…) - 1:23 elapsed, ~2:10 left` lines.
+    Percent,
+}
+
+/// How the game keeps its saves.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum SaveFormat {
+    /// `saves/<n>/save.dat`, retail's card image.
+    #[default]
+    DarkCloud,
+    /// `saves/BESCES-51190dkcl<n>.json` and `saves/autosave.json`.
+    DarkChronicle,
 }
 
 const SOURCES: [&str; 2] = [
@@ -105,6 +134,18 @@ mod tests {
                 release.index_fnv
             );
         }
+    }
+
+    #[test]
+    fn dark_chronicle_is_the_pal_disc() {
+        let game = find("chronicle-two").unwrap();
+        assert_eq!(game.boot.as_deref(), Some("SCES_511.90"));
+        assert!(game.refused_boots["SCUS_972.13"].contains("PAL disc only"));
+        assert_eq!(
+            (game.progress, game.saves),
+            (Progress::Percent, SaveFormat::DarkChronicle)
+        );
+        assert_eq!(find("chronicle").unwrap().progress, Progress::Stages);
     }
 
     #[test]

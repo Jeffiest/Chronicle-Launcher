@@ -28,13 +28,14 @@ pub fn command(build: &Build, dirs: &GameDirs, mods_on: bool) -> Command {
     command
 }
 
-/// What an exit means for the player (Chronicle `port/src/app/exitcodes.hpp`).
+/// What an exit means for the player (Chronicle `port/src/app/exitcodes.hpp`, ChronicleTwo `port/src/exitcodes.hpp`).
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Outcome {
     /// Closed, or quit from the game.
     Closed,
-    /// The data is missing or holds nothing: set up again.
+    /// The data is missing, holds nothing, or was rejected as made by an older port (Dark Chronicle's status 5): set up
+    /// again.
     NoData,
     /// Stopped unexpectedly: the game's saves are kept, and a report can be copied. `what` is the cause, as a
     /// sentence about the game ("It stopped on signal 11").
@@ -44,7 +45,7 @@ pub enum Outcome {
 pub fn outcome(ended: &Ended) -> Outcome {
     let what = match (ended.code, ended.signal) {
         (Some(0), _) => return Outcome::Closed,
-        (Some(3), _) => return Outcome::NoData,
+        (Some(3) | Some(5), _) => return Outcome::NoData,
         (Some(1), _) => "Its window or graphics could not start".to_string(),
         (Some(2), _) => "It did not accept how the launcher started it".to_string(),
         (Some(4), _) => "It stopped on one of its own checks".to_string(),
@@ -83,6 +84,30 @@ pub fn last_crash(logs: &Path) -> Option<Crash> {
 
 pub fn clear_crash(logs: &Path) {
     let _ = std::fs::remove_file(crash_file(logs));
+}
+
+/// The game's own crash report, when it writes one: Chronicle Two keeps the newest bundle's folder in
+/// `<save>/crashes/last_crash.json`, with `report.txt` in it, personal paths already removed (`docs/CRASH_REPORTS.md`).
+/// Bundles are dated by their folder names, so the newest is also found without that file.
+pub fn game_crash_report(save: &Path, since: u64) -> Option<String> {
+    let crashes = save.join("crashes");
+    let mut newest: Option<(std::time::SystemTime, std::path::PathBuf)> = None;
+    for entry in std::fs::read_dir(&crashes).ok()?.flatten() {
+        let report = entry.path().join("report.txt");
+        let Ok(modified) = std::fs::metadata(&report).and_then(|m| m.modified()) else {
+            continue;
+        };
+        if newest.as_ref().is_none_or(|(at, _)| modified > *at) {
+            newest = Some((modified, report));
+        }
+    }
+    let (modified, report) = newest?;
+    let at = modified.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+    if at + 60 < since {
+        return None;
+    }
+    let text = std::fs::read_to_string(report).ok()?;
+    Some(text.chars().take(64 * 1024).collect())
 }
 
 /// Text for a GitHub issue or Discord: what ran and how it ended, and the end of its log, with the home folder
@@ -126,11 +151,31 @@ mod tests {
     fn exits_mean_what_the_port_says() {
         assert_eq!(outcome(&ended(Some(0), None)), Outcome::Closed);
         assert_eq!(outcome(&ended(Some(3), None)), Outcome::NoData);
+        assert_eq!(outcome(&ended(Some(5), None)), Outcome::NoData);
         assert!(matches!(outcome(&ended(Some(4), None)), Outcome::Crashed { .. }));
         let Outcome::Crashed { what } = outcome(&ended(None, Some(11))) else {
             panic!()
         };
         assert!(what.contains("signal 11"));
+    }
+
+    #[test]
+    fn finds_the_games_own_crash_report() {
+        let save = tempfile::tempdir().unwrap();
+        assert_eq!(game_crash_report(save.path(), 0), None);
+        for (session, text) in [("20261018-132124-6c54", "old"), ("20261029-101500-aaaa", "new")] {
+            let bundle = save.path().join("crashes").join(session);
+            std::fs::create_dir_all(&bundle).unwrap();
+            std::fs::write(bundle.join("report.txt"), text).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let now = crate::saves::now();
+        assert_eq!(game_crash_report(save.path(), now).as_deref(), Some("new"));
+        assert_eq!(
+            game_crash_report(save.path(), now + 3600),
+            None,
+            "a report from before this crash is not its own"
+        );
     }
 
     #[test]

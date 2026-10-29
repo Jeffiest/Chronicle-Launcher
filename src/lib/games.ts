@@ -4,7 +4,8 @@ import chronicle from "../../games/chronicle.json";
 import chronicleTwo from "../../games/chronicle-two.json";
 import type { Game } from "./types";
 
-export const GAMES: Game[] = [chronicle, chronicleTwo].sort((a, b) => a.chapter - b.chapter);
+// JSON imports widen string unions; the core's tests (core/src/games.rs) hold the files to the exact values.
+export const GAMES: Game[] = ([chronicle, chronicleTwo] as Game[]).sort((a, b) => a.chapter - b.chapter);
 
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
 

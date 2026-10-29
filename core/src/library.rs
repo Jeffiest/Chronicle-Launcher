@@ -20,10 +20,7 @@ pub enum Next {
 pub enum Activity {
     #[default]
     Idle,
-    SettingUp {
-        stage: setup::Stage,
-        fraction: f32,
-    },
+    SettingUp(setup::Progress),
     Playing,
 }
 

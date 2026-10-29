@@ -14,3 +14,6 @@ game is described in one place.
 | `discs`                   | the releases the port accepts, and the file name the port's own scripts expect                                                                                |
 | `boot`                    | the program the disc's `SYSTEM.CNF` boots, which says the disc is this game; absent until the launcher sets the game up                                       |
 | `index_file`, `releases`  | the disc file whose size and FNV-1a 64 hash name the release, as the port's extractor tells them apart (Chronicle `tools/dcdata/dcdata.hpp`, `KnownReleases`) |
+| `refused_boots`           | boot programs of this game's other releases, each with why it is turned away (Dark Cloud 2's NTSC disc)                                                       |
+| `progress`                | how the extractor reports progress: `stages` (`dcdata`'s lines) or `percent` (`dc2data`'s `[ 42%]` lines)                                                     |
+| `saves`                   | the save format: `dark-cloud` (`saves/<n>/save.dat`) or `dark-chronicle` (`saves/BESCES-51190dkcl<n>.json`)                                                   |

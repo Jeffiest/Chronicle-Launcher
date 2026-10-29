@@ -64,13 +64,26 @@ pub fn identify(game: &Game, path: &Path) -> Result<FoundDisc, String> {
         .ok_or("not a PlayStation 2 disc (no SYSTEM.CNF)")?;
     match boot_program(&cnf) {
         Some(found) if found.eq_ignore_ascii_case(boot) => {}
-        Some(found) => return Err(format!("another game's disc (it boots {found})")),
+        Some(found) => {
+            return Err(
+                match game
+                    .refused_boots
+                    .iter()
+                    .find(|(b, _)| b.eq_ignore_ascii_case(&found))
+                {
+                    Some((_, why)) => why.clone(),
+                    None => format!("another game's disc (it boots {found})"),
+                },
+            );
+        }
         None => return Err("not a PlayStation 2 disc (SYSTEM.CNF names no program)".into()),
     }
+    // A game told by its boot program alone (Dark Chronicle, PAL only) is that disc's region.
     let Some(index_file) = game.index_file.as_deref() else {
+        let release = game.discs.first().map(|d| d.region.clone());
         return Ok(FoundDisc {
             path: path.to_path_buf(),
-            release: None,
+            release,
         });
     };
     let index = iso
@@ -264,7 +277,41 @@ mod tests {
     fn a_game_without_a_boot_program_cannot_be_set_up_yet() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(dir.path().join("dc2.iso"), image(&[("SYSTEM.CNF", CNF)])).unwrap();
-        let err = identify(games::find("chronicle-two").unwrap(), &dir.path().join("dc2.iso")).unwrap_err();
+        let mut game = games::find("chronicle-two").unwrap().clone();
+        game.boot = None;
+        let err = identify(&game, &dir.path().join("dc2.iso")).unwrap_err();
         assert!(err.contains("cannot be set up yet"));
+    }
+
+    #[test]
+    fn dark_chronicle_takes_the_pal_disc_and_names_the_ntsc_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let game = games::find("chronicle-two").unwrap();
+        std::fs::write(
+            dir.path().join("pal.iso"),
+            image(&[("SYSTEM.CNF", b"BOOT2 = cdrom0:\\SCES_511.90;1")]),
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("us.iso"),
+            image(&[("SYSTEM.CNF", b"BOOT2 = cdrom0:\\SCUS_972.13;1")]),
+        )
+        .unwrap();
+        assert_eq!(
+            identify(game, &dir.path().join("pal.iso"))
+                .unwrap()
+                .release
+                .as_deref(),
+            Some("PAL")
+        );
+        assert!(identify(game, &dir.path().join("us.iso"))
+            .unwrap_err()
+            .contains("NTSC release"));
+        assert!(identify(game, &dir.path().join("pal.iso")).is_ok());
+        let dark_cloud = std::fs::write(dir.path().join("dc.iso"), image(&[("SYSTEM.CNF", CNF)]));
+        dark_cloud.unwrap();
+        assert!(identify(game, &dir.path().join("dc.iso"))
+            .unwrap_err()
+            .contains("another game's disc"));
     }
 }

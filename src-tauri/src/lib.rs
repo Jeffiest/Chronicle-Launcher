@@ -1,7 +1,7 @@
 //! The launcher's commands. Each is a thin call into `chronicle-launcher-core`; set-up and play run on threads of
 //! their own and tell the page how they go with events:
 //!
-//! - `activity` (a `GameView`): a game started or stopped setting up or playing, or its set-up moved on a stage;
+//! - `activity` (a `GameView`): a game started or stopped setting up or playing, or its set-up moved on;
 //! - `setup-line` (`{ id, line }`): a line the extractor printed;
 //! - `setup-finished` (`{ id, ok, message }`);
 //! - `game-ended` (`{ id, outcome }`).
@@ -116,10 +116,7 @@ fn set_up(app: AppHandle, runs: State<Runs>, id: String, disc: PathBuf) -> Resul
     let child = process::spawn(setup::command(&build, &disc, &dirs))
         .map_err(|e| format!("{} could not start: {e}", build.extractor.display()))?;
     let child = Arc::new(Mutex::new(child));
-    let starting = Activity::SettingUp {
-        stage: setup::Stage::Starting,
-        fraction: setup::Stage::Starting.fraction(),
-    };
+    let starting = Activity::SettingUp(setup::Progress::starting());
     runs.0.lock().unwrap().insert(
         id.clone(),
         Run {
@@ -141,12 +138,9 @@ fn set_up(app: AppHandle, runs: State<Runs>, id: String, disc: PathBuf) -> Resul
             if !line.trim().is_empty() {
                 last = line.to_string();
             }
-            if let Some(stage) = setup::Stage::of_line(line) {
+            if let Some(progress) = setup::progress_of_line(game.progress, line) {
                 if let Some(run) = runs.0.lock().unwrap().get_mut(&id) {
-                    run.activity = Activity::SettingUp {
-                        stage,
-                        fraction: stage.fraction(),
-                    };
+                    run.activity = Activity::SettingUp(progress);
                 }
                 announce(&app, &id);
             }
@@ -288,11 +282,11 @@ struct SavesView {
 
 #[tauri::command]
 fn saves(id: String) -> Result<SavesView, String> {
-    game(&id)?;
+    let format = game(&id)?.saves;
     let dirs = paths::game_dirs(&root(), &id);
     Ok(SavesView {
-        saves: saves::list(&dirs.save),
-        backups: saves::backups(&dirs.root),
+        saves: saves::list(format, &dirs.save),
+        backups: saves::backups(format, &dirs.root),
     })
 }
 
@@ -302,14 +296,14 @@ fn back_up_saves(runs: State<Runs>, id: String) -> Result<Option<saves::Backup>,
         return Err("The game is running. Close it first, so its saves are not half written.".into());
     }
     let dirs = paths::game_dirs(&root(), &id);
-    saves::back_up(&dirs.root, &dirs.save).map_err(|e| e.to_string())
+    saves::back_up(game(&id)?.saves, &dirs.root, &dirs.save).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn restore_saves(runs: State<Runs>, id: String, backup: String) -> Result<(), String> {
     runs.busy(&id)?;
     let dirs = paths::game_dirs(&root(), &id);
-    saves::restore(&dirs.root, &dirs.save, &backup)
+    saves::restore(game(&id)?.saves, &dirs.root, &dirs.save, &backup)
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
@@ -327,7 +321,14 @@ fn report_text(id: &str) -> Result<String, String> {
         code: crash.ended_code,
         signal: crash.ended_signal,
     };
-    Ok(play::report(game, &build, &ended, &log, dirs_home().as_deref()))
+    let mut report = play::report(game, &build, &ended, &log, dirs_home().as_deref());
+    if let Some(own) = play::game_crash_report(&dirs.save, crash.when) {
+        report.push_str(&format!(
+            "\nThe game's own crash report:\n```\n{}\n```\n",
+            own.trim_end()
+        ));
+    }
+    Ok(report)
 }
 
 fn dirs_home() -> Option<PathBuf> {

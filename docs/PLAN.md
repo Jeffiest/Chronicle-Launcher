@@ -130,13 +130,13 @@ games/<id>/mods/       MoonMod packages, one folder per mod id
 
 | Step | Dark Cloud (`chronicle`) | Dark Chronicle (`chronicle-two`) |
 | --- | --- | --- |
-| Identify the disc | `SYSTEM.CNF` boots `SCUS_971.11` (PAL and NTSC both), then the size and FNV-1a 64 of `DATA.HD2`, `dcdata`'s own table: only the PAL prototype is set up, NTSC 1.02 is refused by name, and an unlisted release is refused too | `SYSTEM.CNF`, then `dc2data list` |
-| Set up | `dcdata extract <iso> data` (no `pack`: the loose `data/` plays, and packing would keep the game's files twice) | `dc2data extract <iso> <root>/data` |
-| Is set-up current? | `setup.json` beside `data/`, written only after the extractor succeeded; exit status 3 from the game forgets it | `dc2data current <iso> <root>/data` (exit status) |
-| Check | none yet: show "Check" only when the port has one | `dc2data check <root>/data` |
+| Identify the disc | `SYSTEM.CNF` boots `SCUS_971.11` (PAL and NTSC both), then the size and FNV-1a 64 of `DATA.HD2`, `dcdata`'s own table: only the PAL prototype is set up, NTSC 1.02 is refused by name, and an unlisted release is refused too | `SYSTEM.CNF` boots `SCES_511.90` (PAL); Dark Cloud 2's NTSC disc (`SCUS_972.13`) is turned away by name. `dc2data` has no release table, so the boot program decides |
+| Set up | `dcdata extract <iso> data` (no `pack`: the loose `data/` plays, and packing would keep the game's files twice) | `dc2data extract <iso> <root>/data`, which writes `<root>/data.zip` and `data.json` (no `data/` folder) and, piped, prints `dc2data: [ 42%] … ~2:10 left` lines the moon follows |
+| Is set-up current? | `setup.json` beside `data/`, written only after the extractor succeeded; exit status 3 from the game forgets it | `setup.json` beside `data.zip`; the game itself refuses older data (exit 3 or 5), which forgets it |
+| Check | none yet: show "Check" only when the port has one | `dc2data check <root>/data` exists; not offered yet |
 | Play | `darkcloud --data <root>/data --save <root>/save` | `darkchronicle --data <root>/data --save <root>/save` |
 | Settings file | `<save>/config.json` (documented keys and defaults) | `config.json` beside the save root (its `docs/PC.md`) |
-| Exit status | 0 ok, 1 window/renderer, 2 bad args, 3 no data, 4 game assertion | 0 ok, 3 no data, crash report per `CRASH_REPORTS.md` |
+| Exit status | 0 ok, 1 window/renderer, 2 bad args, 3 no data, 4 game assertion | as Dark Cloud, plus 5: data rejected (set up again). A crash also leaves the game's own report in `<save>/crashes/`, which **Copy report** includes |
 
 Rules: the launcher passes explicit `--data` and `--save`, so the ports' own
 fallbacks (`DC_DATA`, `XDG_DATA_HOME/chronicle`, …) never pick a different folder;
@@ -236,7 +236,7 @@ The aim is that adding a third game (or a dc1tk/DC2-Toolkit tool) is one
 | 1 | The look: the games' materials, fonts, logo and icon (started), backgrounds from our play, the gold-moon progress, `docs/STYLE.md` | screenshots of the Library and a game page reviewed |
 | 2 | Dark Cloud end to end: find disc, set up with `dcdata`, play, saves with backups, crash/log reports, **Get the game** link and **Choose a build**, checkout build. **Built**; tested with stand-ins for the port's programs, not yet with a real disc | a PAL disc goes from folder to playing; an NTSC disc is turned away with its reason |
 | 3 | MoonMod: discover, enable, settings, install from zip or folder, bundled mods, Mods switch. **Built**, but not install from a GitHub link yet; every bundled mod and example passes the launcher's manifest checks | every bundled mod toggles in the launcher and the in-game manager agrees |
-| 4 | Dark Chronicle: `dc2data` set-up and check, play, saves, MoonMod on `chronicle-two` | a PAL disc goes from folder to playing with a mod on |
+| 4 | Dark Chronicle: `dc2data` set-up with its percentage, play, saves (`BESCES-51190dkcl<n>.json`, play time at 50 a second), MoonMod on `chronicle-two`. **Built**; tested with stand-ins for `dc2data` and `darkchronicle` | a PAL disc goes from folder to playing with a mod on |
 | 5 | Builds and releases: `ports.yml` (Windows x64, Linux x64; macOS arm64 after), signed launcher installers, self-update | held for later; needs the ports' license OK (§3) |
 | 6 | Later: settings pages from each port's `config.json`, save viewer then editor (Chronicle's `saves/1/save.dat`, ChronicleTwo's `dc2Ver4` JSON), decomp.dev progress band, Discord presence, DC2-Toolkit/dc1tk tools | each its own PR |
 

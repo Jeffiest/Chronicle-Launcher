@@ -5,22 +5,13 @@
   import { api } from "../lib/api";
   import { fileName } from "../lib/format";
   import { attempt, replace, store } from "../lib/store.svelte";
-  import type { GameView, Scan, Stage } from "../lib/types";
+  import type { GameView, Scan } from "../lib/types";
 
   let { view }: { view: GameView } = $props();
 
   let folder: string | null = $state(null);
   let scan: Scan | null = $state(null);
   let looking = $state(false);
-
-  const STAGE_WORDS: Record<Stage, string> = {
-    starting: "Starting the extractor",
-    "reading-disc": "Reading your disc",
-    sorting: "Sorting the game's files",
-    checking: "Checking every file",
-    preparing: "Preparing textures, models and sound",
-    done: "Done",
-  };
 
   const game = $derived(view.game);
   const activity = $derived(view.activity);
@@ -59,7 +50,7 @@
       <Moon lit={activity.fraction} label="Setting up" />
       <div>
         <h2 class="gold-text">Setting up {game.title}</h2>
-        <p class="stage">{STAGE_WORDS[activity.stage]}…</p>
+        <p class="stage">{activity.doing}…</p>
         <p class="soft">This reads the whole disc once. It can take a few minutes.</p>
         <button class="removes" onclick={() => attempt(() => api.cancelSetUp(game.id))}>Cancel</button>
       </div>
