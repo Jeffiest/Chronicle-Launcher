@@ -434,7 +434,13 @@ export function mockApi(tick = 700): Api {
     },
     async renderScene(id) {
       setTimeout(
-        () => emit("scene-ready", { id, ok: false, message: "The browser preview cannot run the game." }),
+        () =>
+          emit("scene-ready", {
+            id,
+            ok: false,
+            message: "The browser preview cannot run the game.",
+            quiet: false,
+          }),
         tick,
       );
     },

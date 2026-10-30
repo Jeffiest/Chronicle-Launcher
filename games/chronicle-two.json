@@ -20,5 +20,15 @@
   },
   "progress": "percent",
   "saves": "dark-chronicle",
-  "scene_args": ["--headless", "--jump", "town:10", "--fast-load", "--window", "1920x1080", "--frames", "600"]
+  "scene_args": [
+    "--headless",
+    "--jump",
+    "town:10",
+    "--fast-load",
+    "--window",
+    "1920x1080",
+    "--frames",
+    "600"
+  ],
+  "scene_any_map": "town:{map}"
 }

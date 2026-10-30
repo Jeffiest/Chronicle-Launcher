@@ -191,7 +191,7 @@ fn set_up(app: AppHandle, runs: State<Runs>, id: String, disc: PathBuf) -> Resul
         announce(&app, &id);
         // The first backdrop: a frame of the game the player just set up.
         if set_up {
-            let _ = start_scene(&app, &id);
+            let _ = start_scene(&app, &id, Render::Now);
         }
     });
     view(&runs, &current.game.id)
@@ -202,10 +202,22 @@ struct SceneReady {
     id: String,
     ok: bool,
     message: String,
+    /// A render the player did not ask for (after a session, the town changed): the page updates without a word.
+    quiet: bool,
 }
 
-/// Renders the page's backdrop with the port, on a thread; `scene-ready` says how it went.
-fn start_scene(app: &AppHandle, id: &str) -> Result<(), String> {
+/// Why a backdrop is rendered.
+#[derive(Clone, Copy, PartialEq)]
+enum Render {
+    /// Set-up just finished, or the player asked for a new one.
+    Now,
+    /// A session ended: only if the latest save is somewhere else, and never over the player's own picture.
+    IfMoved,
+}
+
+/// Renders the page's backdrop with the port, on a thread: the town of the player's latest save, or the default
+/// place when there is no save or the port cannot start there. `scene-ready` says how it went.
+fn start_scene(app: &AppHandle, id: &str, why: Render) -> Result<(), String> {
     let runs = app.state::<Runs>();
     runs.busy(id)?;
     let game = game(id)?;
@@ -215,9 +227,17 @@ fn start_scene(app: &AppHandle, id: &str) -> Result<(), String> {
         return Err("Set the game up from your disc first.".into());
     }
     let dirs = paths::game_dirs(&root(), id);
+    let place = scene::place(game, &saves::list(game.saves, &dirs.save));
+    let default = scene::default_place(game).map(str::to_string);
+    if why == Render::IfMoved {
+        let shown = scene::shown(&dirs);
+        if shown.own || place.is_none() || shown.place == place {
+            return Ok(());
+        }
+    }
     let out = scene::pending(&dirs);
     let _ = std::fs::remove_file(&out);
-    let child = process::spawn(scene::command(game, &build, &dirs, &out))
+    let child = process::spawn(scene::command(game, &build, &dirs, place.as_deref(), &out))
         .map_err(|e| format!("{} could not start: {e}", build.executable.display()))?;
     let child = Arc::new(Mutex::new(child));
     runs.0.lock().unwrap().insert(
@@ -230,28 +250,53 @@ fn start_scene(app: &AppHandle, id: &str) -> Result<(), String> {
     announce(app, id);
     let (app, id) = (app.clone(), id.to_string());
     std::thread::spawn(move || {
-        let log = dirs.logs.join(format!("scene-{}.log", saves::now()));
-        let ended = process::follow(&child, &log, |_| {});
-        let result = match ended {
-            Ok(ended) if ended.success() => scene::adopt(&dirs, &out),
-            Ok(_) => Err("The game did not finish its picture; the log says why.".into()),
-            Err(e) => Err(e.to_string()),
+        let follow = |child: &Arc<Mutex<_>>| {
+            let log = dirs.logs.join(format!("scene-{}.log", saves::now()));
+            match process::follow(child, &log, |_| {}) {
+                Ok(ended) if ended.success() => scene::adopt(&dirs, &out),
+                Ok(_) => Err("The game did not finish its picture; the log says why.".to_string()),
+                Err(e) => Err(e.to_string()),
+            }
         };
+        let mut rendered = place.clone().or(default.clone());
+        let mut result = follow(&child);
+        // A save on a map the port cannot start on: the default place instead.
+        if result.is_err() && place.is_some() && place != default {
+            let retry = process::spawn(scene::command(game, &build, &dirs, None, &out))
+                .map(|c| Arc::new(Mutex::new(c)));
+            if let Ok(child) = retry {
+                if let Some(run) = app.state::<Runs>().0.lock().unwrap().get_mut(&id) {
+                    run.child = child.clone();
+                }
+                rendered = default.clone();
+                result = follow(&child);
+            }
+        }
+        if result.is_ok() {
+            let _ = scene::record(
+                &dirs,
+                &scene::Shown {
+                    place: rendered,
+                    own: false,
+                },
+            );
+        }
         let _ = std::fs::remove_file(&out);
         app.state::<Runs>().0.lock().unwrap().remove(&id);
-        let ready = match result {
-            Ok(()) => SceneReady {
-                id: id.clone(),
-                ok: true,
-                message: "New background taken.".into(),
-            },
-            Err(e) => SceneReady {
-                id: id.clone(),
-                ok: false,
-                message: e,
-            },
+        let (ok, message) = match result {
+            Ok(()) => (true, "New background taken.".to_string()),
+            Err(e) => (false, e),
         };
-        let _ = app.emit("scene-ready", ready);
+        let quiet = why == Render::IfMoved;
+        let _ = app.emit(
+            "scene-ready",
+            SceneReady {
+                id: id.clone(),
+                ok,
+                message,
+                quiet,
+            },
+        );
         announce(&app, &id);
     });
     Ok(())
@@ -266,14 +311,23 @@ fn scene_image(id: String) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn render_scene(app: AppHandle, id: String) -> Result<(), String> {
-    start_scene(&app, &id)
+    start_scene(&app, &id, Render::Now)
 }
 
 /// Makes the player's own picture the backdrop.
 #[tauri::command]
 fn use_scene(id: String, picture: PathBuf) -> Result<(), String> {
     game(&id)?;
-    scene::adopt(&paths::game_dirs(&root(), &id), &picture)
+    let dirs = paths::game_dirs(&root(), &id);
+    scene::adopt(&dirs, &picture)?;
+    scene::record(
+        &dirs,
+        &scene::Shown {
+            place: None,
+            own: true,
+        },
+    )
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -357,6 +411,8 @@ fn play(app: AppHandle, runs: State<Runs>, id: String) -> Result<GameView, Strin
             },
         );
         announce(&app, &thread_id);
+        // The page follows the player: a new backdrop when they saved in another town.
+        let _ = start_scene(&app, &thread_id, Render::IfMoved);
     });
     view(&runs, &id)
 }

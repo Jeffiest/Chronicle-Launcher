@@ -64,8 +64,8 @@ export async function start() {
     store.lines[id] = lines.slice(-LINES);
   });
   await api.on("setup-finished", ({ ok, message }) => toast(message, ok ? "ok" : "err"));
-  await api.on("scene-ready", ({ id, ok, message }) => {
-    toast(message, ok ? "ok" : "err");
+  await api.on("scene-ready", ({ id, ok, message, quiet }) => {
+    if (!quiet) toast(message, ok ? "ok" : "err");
     if (ok) loadScene(id);
   });
   await api.on("game-ended", ({ id, outcome }) => {

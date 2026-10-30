@@ -114,7 +114,7 @@ export interface Events {
   "setup-line": { id: string; line: string };
   "setup-finished": { id: string; ok: boolean; message: string };
   "game-ended": { id: string; outcome: Outcome };
-  "scene-ready": { id: string; ok: boolean; message: string };
+  "scene-ready": { id: string; ok: boolean; message: string; quiet: boolean };
 }
 
 export interface ModSetting {

@@ -87,9 +87,13 @@ left, and each game's page filling the window.
 - **Each game's accent and lettering**: Dark Cloud's menu yellow `#bbbb40`, chosen row `#453624`, in Chronicle Sharp
   (Dark Cloud's own letters); Dark Chronicle's pale gold `#d0b16c`, chosen row `#433725`, in a condensed sans like
   its menus (Barlow Condensed, bundled). Titles in Chronicle Title, white with a dark edge as the games' headings.
-- **The scene behind each page**: a frame of the game rendered by the port from the player's own data after set-up
-  (`--headless --jump ... --screenshot`, `games/*.json` `scene_args`: populated Norune, Palm Brinks), or the player's
-  own screenshot. Nothing from the games ships with the launcher. Before there is one, Dark Chronicle shows its
+- **The scene behind each page**: a frame of the game rendered by the port from the player's own data
+  (`--headless --jump ... --screenshot`): the town of the latest save, after set-up and after any session that ends
+  somewhere new. Dark Cloud's `scene_places` maps a save's `map_no` to the port's `--jump` (its populated presets
+  `e01`/`e03`/`e04` for Norune, Queens and Muska Lacka, `edit:1`/`edit:4` for Matataki and Yellow Drops; a dungeon
+  to the town above it); Dark Chronicle starts on the save's own map (`town:{map}`). With no save, or a map the
+  port refuses, `scene_args`' own place: populated Norune, Palm Brinks. Or the player's own screenshot, kept until
+  they ask for a new frame. Nothing from the games ships with the launcher. Before there is one, Dark Chronicle shows its
   Options backdrop of leather and embossed gold lines, drawn by the launcher; Dark Cloud its menu darkness.
 - **Progress**: Dark Cloud's gold moon waxing; Dark Chronicle's gold ring filling, from the same ornament.
 - **Moon Factory** is laid out as the in-game Mod Manager is, so the two read as one tool.

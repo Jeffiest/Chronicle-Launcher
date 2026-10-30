@@ -46,6 +46,13 @@ pub struct Game {
     /// How the port renders the page's backdrop from the player's own data (see `scene.rs`).
     #[serde(default)]
     pub scene_args: Vec<String>,
+    /// The place to render for a save's `map_no`, as the port's `--jump` takes it: the towns and the dungeons
+    /// beneath them. A save elsewhere keeps `scene_args`' own place.
+    #[serde(default)]
+    pub scene_places: std::collections::BTreeMap<String, String>,
+    /// For a port that can start on any map: `--jump` with `{map}` the save's `map_no`.
+    #[serde(default)]
+    pub scene_any_map: Option<String>,
     #[serde(default)]
     pub progress: Progress,
     #[serde(default)]
