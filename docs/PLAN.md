@@ -76,41 +76,25 @@ reads like it:
   `--screenshot`, per town), a Dark Chronicle "Scoop" photo album, decomp
   progress shown as a chapter's pages filling in (decomp.dev).
 
-## 2. The look: the logo's sky, the game's stone and paper
+## 2. The look: the games' own menus
 
-"Dark Cloud" is the game's name, not a mood. The look comes from the games
-themselves and from what The Moon People already made:
+The launcher looks like the games' own screens, after the OpenGOAL layout: a title bar, a rail of the games down the
+left, and each game's page filling the window.
 
-- **The Chronicle logo** (Chronicle README): letters filled with sky (royal blue
-  through lavender to haze), ornate gold trim with bronze shading, a gold moon and
-  a blue moon.
-- **The ports' icon** (`port/icon/chronicle-512.png`, the same in both ports): the
-  two moons over brushed purple clouds.
-- **The port's menu materials** (Chronicle `port/src/ui/framework/surfaces.cpp`,
-  `buttons.cpp`): Blue Stone and Paper windows, and the Amber Gold, Slate Blue,
-  Terracotta and Stone Green plates, each with its base, rim and lettering colours.
-- **The port's fonts** (Chronicle `tools/font/`): Chronicle Title, the title menu's
-  lettering, and Chronicle Sharp, Dark Cloud's dialogue letters.
+- **The menu window** (measured from captures of MoonMod's Mod Manager inside each port): near-black `#0c0e12`, a
+  slate frame `#272c36` with a dark edge, `#4d5159` rules, a `#16191f` footer of control hints, and the chosen row on
+  a brown bar. Every panel is one of these windows.
+- **Each game's accent and lettering**: Dark Cloud's menu yellow `#bbbb40`, chosen row `#453624`, in Chronicle Sharp
+  (Dark Cloud's own letters); Dark Chronicle's pale gold `#d0b16c`, chosen row `#433725`, in a condensed sans like
+  its menus (Barlow Condensed, bundled). Titles in Chronicle Title, white with a dark edge as the games' headings.
+- **The scene behind each page**: a frame of the game rendered by the port from the player's own data after set-up
+  (`--headless --jump ... --screenshot`, `games/*.json` `scene_args`: populated Norune, Palm Brinks), or the player's
+  own screenshot. Nothing from the games ships with the launcher. Before there is one, Dark Chronicle shows its
+  Options backdrop of leather and embossed gold lines, drawn by the launcher; Dark Cloud its menu darkness.
+- **Progress**: Dark Cloud's gold moon waxing; Dark Chronicle's gold ring filling, from the same ornament.
+- **Moon Factory** is laid out as the in-game Mod Manager is, so the two read as one tool.
 
-| Part | Comes from | Tokens (`src/app.css`) |
-| --- | --- | --- |
-| Page | the logo's sky, with the icon's clouds below it | `--sky-*`, `--cloud-*` |
-| Headings | Chronicle Title in the logo's gold, bronze edge | `--gold-*`, `--bronze*`, `.gold-text` |
-| Windows | Blue Stone `rgb(78 92 116)` / rim `rgb(22 28 40)`; Paper `rgb(160 128 90)` / rim `rgb(58 44 28)` | `.stone`, `.paper` |
-| Main button | Amber Gold plate `rgb(218 158 74)`, recessed lettering `rgb(82 52 16)` | `button.primary` |
-| Other buttons | Slate Blue plate `rgb(62 94 166)`, lettering `rgb(172 196 250)` | `button` |
-| Removing | Terracotta plate `rgb(214 114 60)` | `button.removes` |
-| Ready | Stone Green lettering `rgb(172 240 216)` | `.state.ok` |
-| Game's voice (states, heroes) | Chronicle Sharp | `--font-game` |
-| Body text | Inter | `--font-sans` |
-
-The reference's structure rules still apply: one main action per page in a fixed
-place, secondary actions in a menu, removing last, colours only as tokens, hovers
-only under `@media (hover: hover)`.
-
-Still to do in phase 1: backgrounds from our own play (the port's
-`--screenshot`) behind each chapter, and `docs/STYLE.md`. The logo, icon and fonts
-are The Moon People's (`THIRD_PARTY_NOTICES.md`), kept with their approval.
+The frame counts in `scene_args` are first guesses; a run on a real build sets them.
 
 ## 3. How the launcher drives each game
 

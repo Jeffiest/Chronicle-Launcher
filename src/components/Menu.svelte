@@ -1,4 +1,4 @@
-<!-- The page's rarer actions, beside its main button. Anything that removes comes last, in --err. -->
+<!-- The page's rarer actions, in a menu window beside its main one. Anything that removes comes last. -->
 <script module lang="ts">
   export interface Item {
     label: string;
@@ -13,21 +13,37 @@
 </script>
 
 <div class="menu">
-  <button aria-haspopup="menu" aria-expanded={open} onclick={() => (open = !open)} title="More">⋯</button>
+  <button
+    class="window opener"
+    aria-haspopup="menu"
+    aria-expanded={open}
+    aria-label="More"
+    onclick={() => (open = !open)}
+  >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+      ><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle
+        cx="19"
+        cy="12"
+        r="2"
+      ></circle></svg
+    >
+  </button>
   {#if open}
-    <div class="items stone" role="menu">
+    <ul class="window items rows" role="menu">
       {#each items as item (item.label)}
-        <button
-          role="menuitem"
-          class:removes={item.removes}
-          class:plain={!item.removes}
-          onclick={() => {
-            open = false;
-            item.run();
-          }}>{item.label}</button
-        >
+        <li role="none">
+          <button
+            role="menuitem"
+            class="row"
+            class:removes={item.removes}
+            onclick={() => {
+              open = false;
+              item.run();
+            }}>{item.label}</button
+          >
+        </li>
       {/each}
-    </div>
+    </ul>
   {/if}
 </div>
 
@@ -35,30 +51,27 @@
   .menu {
     position: relative;
   }
+  .opener {
+    height: 100%;
+    min-height: 56px;
+    padding: 0 18px;
+    border: 0;
+    color: var(--text-soft);
+  }
   .items {
     position: absolute;
-    top: calc(100% + 10px);
     left: 0;
+    bottom: calc(100% + 14px);
     z-index: 4;
-    min-width: 240px;
-    display: grid;
-    gap: 6px;
-    padding: 10px;
+    min-width: 260px;
   }
-  .items .plain {
+  .items button.row {
+    width: 100%;
+    border: 0;
     background: none;
-    box-shadow: none;
     text-align: left;
-    color: var(--on-stone);
-    padding: 8px 10px;
   }
   .items .removes {
-    margin-top: 6px;
-    text-align: left;
-  }
-  @media (hover: hover) {
-    .items .plain:hover {
-      background: var(--stone-lo);
-    }
+    color: var(--err);
   }
 </style>

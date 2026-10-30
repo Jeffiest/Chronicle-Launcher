@@ -1,9 +1,8 @@
 /* Chronicle Launcher's look: docs/STYLE.md. Every colour is a token here, on :root, and nowhere else
-   (src/lib/stylesheets.test.ts). The colours are the games' own:
-   - the sky, the gold trim and the two moons of the Chronicle logo;
-   - the purple brush clouds of the ports' icon (port/icon/chronicle-512.png);
-   - the port's menu materials, Blue Stone and Paper windows and the Amber Gold, Slate Blue, Terracotta and
-     Stone Green plates (Chronicle port/src/ui/framework/surfaces.cpp and buttons.cpp, their base and rim values). */
+   (src/lib/stylesheets.test.ts). The look is the games' own menus, measured from captures of MoonMod's Mod Manager
+   running inside each port (MoonMod artifacts/manager-ui-chronicle*.png): the near-black window, its slate frame,
+   the rules between sections, the brown bar under the selected row and the footer of control hints. Each game
+   brings its own accent and lettering (`[data-game]` below); Dark Chronicle its leather and gold backdrop. */
 
 @font-face {
   font-family: "Chronicle Title";
@@ -22,89 +21,78 @@
 :root {
   color-scheme: dark;
 
-  /* The logo's sky, inside its letters: royal blue to lavender to haze. */
-  --sky-high: #23308c;
-  --sky: #3a48c4;
-  --sky-mid: #6f6fe0;
-  --sky-low: #a19ffb;
-  --sky-haze: #e4e4fc;
+  /* The menu window. */
+  --win: #0c0e12;
+  --win-glass: rgb(12 14 18 / 0.94);
+  --frame: #272c36;
+  --frame-dark: #0e1117;
+  --rule: #4d5159;
+  --footer: #16191f;
+  --select-edge: #8a7048;
 
-  /* The icon's clouds. */
-  --cloud-deep: #240c3c;
-  --cloud: #3c2454;
-  --cloud-hi: #543c6c;
-  --cloud-grey: #6c6c9c;
+  --text: #e8e8e8;
+  --text-soft: #a8a9ad;
+  --text-dim: #7d7e82;
+  --title: #f4f0e2;
+  --title-edge: #1d1822;
+  --ok: #acf0d8;
+  --err: #f0907a;
+  --moon: #4697dd;
+  --moon-light: #cfe6ff;
+  --shadow: rgb(0 0 0 / 0.6);
+  --shade: rgb(8 9 12 / 0.9);
+  --shade-soft: rgb(8 9 12 / 0.5);
+  --clear: rgb(8 9 12 / 0);
 
-  /* The two moons. */
-  --moon-gold: #face77;
-  --moon-pale: #e4cc9c;
-  --moon-blue: #4697dd;
-
-  /* The logo's gold trim. */
-  --gold-hi: #fce49c;
-  --gold: #fccc6c;
-  --gold-mid: #b46c0c;
-  --bronze: #843c0c;
-  --bronze-deep: #54240c;
-
-  /* Blue Stone window: base rgb(78 92 116), rim rgb(22 28 40). */
-  --stone: #4e5c74;
-  --stone-hi: #6c7f9e;
-  --stone-lo: #3a4558;
-  --stone-rim: #161c28;
-  --on-stone: #eef1f8;
-  --on-stone-soft: #c3cbdc;
-  --on-stone-dim: #9aa5bc;
-
-  /* Paper window: base rgb(160 128 90), rim rgb(58 44 28). */
-  --paper: #a0805a;
-  --paper-hi: #c4a57c;
-  --paper-lo: #8a6c4a;
-  --paper-rim: #3a2c1c;
-  --ink: #2a1c0e;
-  --ink-soft: #4a3520;
-
-  /* Plates: face, rim, recessed (dark) lettering, painted (light) lettering. */
-  --amber: #da9e4a;
-  --amber-hi: #f0c272;
-  --amber-rim: #4e3414;
-  --amber-ink: #523410;
-  --amber-light: #ffe29c;
-  --slate: #3e5ea6;
-  --slate-hi: #5a7cc4;
-  --slate-rim: #122048;
-  --slate-light: #acc4fa;
-  --terracotta: #d6723c;
-  --terracotta-hi: #ea935c;
-  --terracotta-rim: #4a2210;
-  --terracotta-light: #feb888;
-  --green: #5cb094;
-  --green-rim: #1c4438;
-  --green-light: #acf0d8;
-
-  --shadow: rgb(16 8 32 / 0.45);
-  --bevel-light: rgb(255 255 255 / 0.28);
-  --bevel-dark: rgb(0 0 0 / 0.32);
-  --veil: rgb(36 12 60 / 0.55);
-
-  /* A fine grain for stone and paper, as the port's procedural plates have. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Dark Cloud: its menus' yellow and the brown of a chosen row. */
+  --dc1-accent: #bbbb40;
+  --dc1-accent-bright: #e6e65a;
+  --dc1-select: #453624;
+  /* Dark Chronicle: its menus' pale gold, its chosen row, and its Options backdrop of leather and gold lines. */
+  --dc2-accent: #d0b16c;
+  --dc2-accent-bright: #f0d48a;
+  --dc2-select: #433725;
+  --leather: #7a5237;
+  --leather-dark: #5e3621;
+  --leather-shade: rgb(30 14 6 / 0.82);
+  --leather-shade-soft: rgb(30 14 6 / 0.35);
+  --leather-clear: rgb(30 14 6 / 0);
+  --gold-hi: #e2c47c;
+  --gold: #b5934d;
+  --gold-lo: #94722f;
+  --gold-knot-hi: #f4dc98;
+  --gold-knot: #c29e55;
+  --gold-knot-lo: #7a5a26;
+  --emboss: #2b140b;
 
   --font-title: "Chronicle Title", Georgia, serif;
-  --font-game: "Chronicle Sharp", "Inter Variable", sans-serif;
+  --font-dc1: "Chronicle Sharp", "Inter Variable", sans-serif;
+  --font-dc2: "Barlow Condensed", "Arial Narrow", sans-serif;
   --font-sans: "Inter Variable", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
 
-  --radius: 12px;
-  --radius-plate: 7px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --fast: 120ms;
-  --medium: 240ms;
   --slow: 480ms;
-  --page-x: clamp(16px, 4vw, 48px);
-  --page-top: 28px;
-  --page-gap: 22px;
+  --rail: 92px;
+  --bar: 44px;
+}
+
+/* Each game's accent, chosen row and lettering. */
+[data-game="chronicle"] {
+  --accent: var(--dc1-accent);
+  --accent-bright: var(--dc1-accent-bright);
+  --select: var(--dc1-select);
+  --font-game: var(--font-dc1);
+  --game-size: 1;
+}
+
+[data-game="chronicle-two"] {
+  --accent: var(--dc2-accent);
+  --accent-bright: var(--dc2-accent-bright);
+  --select: var(--dc2-select);
+  --font-game: var(--font-dc2);
+  --game-size: 1.12;
 }
 
 * {
@@ -113,51 +101,36 @@
 
 html,
 body {
-  min-height: 100%;
+  height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
-/* The page is the logo's sky, darkening upward. */
 body {
-  background:
-    radial-gradient(120% 60% at 50% 110%, var(--sky-low), transparent 70%),
-    linear-gradient(180deg, var(--sky-high), var(--sky) 45%, var(--sky-mid));
-  background-attachment: fixed;
-  color: var(--on-stone);
+  background: var(--win);
+  color: var(--text);
   font: 15px/1.5 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3 {
-  margin: 0;
-  font-family: var(--font-title);
-  font-weight: 700;
-  letter-spacing: 0.03em;
+#app {
+  height: 100vh;
 }
 
+h1,
+h2,
+h3,
 p {
   margin: 0;
 }
 
 a {
-  color: var(--gold);
+  color: var(--accent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--gold-hi);
-  outline-offset: 3px;
-}
-
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-#app > main {
-  flex: 1;
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
 }
 
 code,
@@ -166,181 +139,183 @@ code,
   font-size: 0.9em;
 }
 
-/* Gold lettering, as the logo's trim: a bright top, a deep base, a bronze edge. */
-.gold-text {
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 45%, var(--gold-mid) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 0 var(--bronze-deep)) drop-shadow(0 3px 6px var(--shadow));
-}
-
-/* A Blue Stone window: grain over a top-lit face, a bevel, a dark rim. */
-.stone {
-  background:
-    var(--grain), var(--mottle), linear-gradient(180deg, var(--stone-hi), var(--stone) 40%, var(--stone-lo));
-  background-blend-mode: overlay, overlay, normal;
-  color: var(--on-stone);
-  border-radius: var(--radius);
-  box-shadow:
-    inset 2px 2px 0 var(--bevel-light),
-    inset -2px -2px 0 var(--bevel-dark),
-    0 0 0 2px var(--stone-rim),
-    0 10px 24px var(--shadow);
-}
-
-/* A Paper window: parchment with dark ink. */
-.paper {
-  background:
-    var(--grain), var(--mottle), linear-gradient(180deg, var(--paper-hi), var(--paper) 50%, var(--paper-lo));
-  background-blend-mode: overlay, overlay, normal;
-  color: var(--ink);
-  border-radius: var(--radius);
-  box-shadow:
-    inset 2px 2px 0 var(--bevel-light),
-    inset -2px -2px 0 var(--bevel-dark),
-    0 0 0 2px var(--paper-rim),
-    0 10px 24px var(--shadow);
-}
-
-/* Buttons are the game's plates: Slate Blue by default, Amber Gold for the one main action, Terracotta for what
-   removes. */
 button {
-  --face: var(--slate);
-  --face-hi: var(--slate-hi);
-  --rim: var(--slate-rim);
-  font: 600 14px/1 var(--font-sans);
-  color: var(--slate-light);
-  background: var(--grain), linear-gradient(180deg, var(--face-hi), var(--face) 55%);
-  background-blend-mode: overlay, normal;
-  border: 0;
-  border-radius: var(--radius-plate);
-  padding: 10px 18px;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
-  box-shadow:
-    inset 1px 1px 0 var(--bevel-light),
-    inset -1px -2px 0 var(--bevel-dark),
-    0 0 0 2px var(--rim),
-    0 3px 0 2px var(--rim);
-  text-shadow: 0 1px 0 var(--bevel-dark);
-  transition:
-    filter var(--fast) var(--ease),
-    transform var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease);
-}
-
-button:active {
-  transform: translateY(2px);
-  box-shadow:
-    inset 1px 1px 0 var(--bevel-dark),
-    0 0 0 2px var(--rim),
-    0 1px 0 2px var(--rim);
 }
 
 button:disabled {
   cursor: default;
-  filter: saturate(0.35) brightness(0.85);
+  opacity: 0.5;
 }
 
-button.primary {
-  --face: var(--amber);
-  --face-hi: var(--amber-hi);
-  --rim: var(--amber-rim);
-  color: var(--amber-ink);
-  font: 700 18px/1 var(--font-title);
-  letter-spacing: 0.06em;
+/* A menu window: near-black, a slate frame with a dark edge outside it. */
+.window {
+  background: var(--win-glass);
+  box-shadow:
+    0 0 0 4px var(--frame),
+    0 0 0 5px var(--frame-dark),
+    0 18px 40px var(--shadow);
+  font-family: var(--font-game);
+}
+
+.window-title {
+  padding: 12px 18px 8px;
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: calc(20px * var(--game-size));
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 13px 30px 12px;
-  text-shadow: 0 1px 0 var(--amber-light);
+  color: var(--accent);
 }
 
-button.removes {
-  --face: var(--terracotta);
-  --face-hi: var(--terracotta-hi);
-  --rim: var(--terracotta-rim);
-  color: var(--terracotta-light);
+.rule {
+  height: 2px;
+  margin: 0 14px;
+  background: var(--rule);
 }
 
-button.link {
+/* Rows of a list; the chosen one on the brown bar, in the accent. */
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 10px;
+  font-family: var(--font-game);
+  font-size: calc(18px * var(--game-size));
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.row.chosen {
+  background: var(--select);
+  color: var(--accent);
+}
+
+.row.faint {
+  color: var(--text-dim);
+}
+
+/* The footer of a window: control hints, the one to press on the brown bar. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 8px 14px;
+  background: var(--footer);
+  box-shadow: inset 0 2px 0 var(--frame);
+  font-family: var(--font-game);
+  font-size: calc(15px * var(--game-size));
+  color: var(--text-soft);
+}
+
+.key {
+  padding: 1px 10px;
+  border: 0;
+  background: var(--select);
+  color: var(--text);
+  font-family: var(--font-game);
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.link {
+  padding: 0;
+  border: 0;
   background: none;
-  box-shadow: none;
-  padding: 4px 0;
-  color: var(--gold-hi);
-  text-shadow: 0 1px 2px var(--shadow);
+  color: var(--text-soft);
+  font-family: var(--font-game);
+  font-size: inherit;
+  white-space: nowrap;
 }
 
-@media (hover: hover) {
-  button:not(:disabled):hover {
-    filter: brightness(1.12);
-  }
-  button.link:hover {
-    text-decoration: underline;
-  }
-}
-
-/* A state: a dot and a few words. */
-.state {
+/* The page's one main action: a framed menu box on the brown bar, in the bright accent. */
+.main-action {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  min-height: 64px;
+  padding: 0 46px 0 26px;
+  border: 0;
+  background: var(--select);
+  box-shadow:
+    inset 0 0 0 1px var(--select-edge),
+    0 0 0 4px var(--frame),
+    0 0 0 5px var(--frame-dark),
+    0 14px 30px var(--shadow);
   font-family: var(--font-game);
-  letter-spacing: 0.02em;
-  color: var(--on-stone-soft);
+  font-size: calc(28px * var(--game-size));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+  transition: filter var(--fast) var(--ease);
 }
 
-.state::before {
-  content: "";
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 6px currentColor;
+.main-action:active {
+  filter: brightness(0.9);
+}
+
+/* ON / OFF, and any choice of a few: one framed strip, the chosen one on the brown bar. */
+.choice {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--frame-dark);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.choice button {
+  padding: 2px 10px;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--font-game);
+  font-size: calc(15px * var(--game-size));
+  text-transform: uppercase;
+}
+
+.choice button[aria-pressed="true"] {
+  background: var(--select);
+  color: var(--accent);
+}
+
+/* A state in a few words. */
+.state {
+  font-family: var(--font-game);
+  color: var(--text-soft);
 }
 
 .state.ok {
-  color: var(--green-light);
-}
-
-.state.warn {
-  color: var(--gold-hi);
+  color: var(--accent-bright);
 }
 
 .state.err {
-  color: var(--terracotta-light);
+  color: var(--err);
 }
 
-/* A task done in steps, in order. */
-ol.steps {
-  list-style: none;
-  counter-reset: step;
-  margin: 0;
-  padding: 0;
-}
-
-ol.steps > li {
-  counter-increment: step;
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 0;
-  border-top: 1px solid var(--paper-lo);
-}
-
-ol.steps > li:first-child {
-  border-top: 0;
-}
-
-ol.steps > li::before {
-  content: counter(step);
-  font: 700 24px/1 var(--font-title);
-  color: var(--bronze);
-  text-align: center;
-}
-
-ol.steps > li.done::before {
-  content: "✓";
-  color: var(--green-rim);
+@media (hover: hover) {
+  .row:not(.chosen):not(.faint):hover,
+  .link:hover {
+    color: var(--accent);
+  }
+  .main-action:not(:disabled):hover,
+  .key:not(:disabled):hover {
+    filter: brightness(1.15);
+  }
+  .choice button:not([aria-pressed="true"]):hover {
+    color: var(--text);
+  }
 }
 
 .rise {
@@ -361,57 +336,4 @@ ol.steps > li.done::before {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
-}
-
-/* On/off is a switch: a track of slate, lit with the blue moon when on, and a pale gold knob. */
-input.switch {
-  appearance: none;
-  flex: none;
-  width: 46px;
-  height: 26px;
-  margin: 0;
-  border-radius: 999px;
-  background: var(--stone-rim);
-  box-shadow:
-    inset 0 2px 3px var(--bevel-dark),
-    0 0 0 2px var(--slate-rim);
-  position: relative;
-  cursor: pointer;
-  transition: background var(--fast) var(--ease);
-}
-
-input.switch::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--gold-hi), var(--moon-pale) 60%, var(--gold-mid));
-  box-shadow: 0 1px 2px var(--bevel-dark);
-  transition: transform var(--fast) var(--ease);
-}
-
-input.switch:checked {
-  background: var(--moon-blue);
-}
-
-input.switch:checked::after {
-  transform: translateX(20px);
-}
-
-input.switch:disabled {
-  cursor: default;
-  filter: saturate(0.3) brightness(0.8);
-}
-
-/* A setting is a row: its name and a line on the left, its control on the right. */
-.setting {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 20px;
-  align-items: center;
-  padding: 12px 0;
-  border-top: 1px solid var(--stone-lo);
 }

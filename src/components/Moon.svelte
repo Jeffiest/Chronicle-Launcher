@@ -1,14 +1,12 @@
-<!-- The gold moon of the Chronicle logo, waxing as a long job goes: the launcher's progress. Its shadowed part is
-     the icon's cloud purple. -->
+<!-- Dark Cloud's set-up progress: the gold moon of the Chronicle logo, waxing. -->
 <script lang="ts">
   import { moonPath } from "../lib/format";
 
-  let { lit, size = 96, label }: { lit: number; size?: number; label: string } = $props();
+  let { lit, size = 120, label }: { lit: number; size?: number; label: string } = $props();
   const id = $props.id();
 </script>
 
 <svg
-  class="moon"
   width={size}
   height={size}
   viewBox="-1.25 -1.25 2.5 2.5"
@@ -20,21 +18,17 @@
 >
   <defs>
     <radialGradient id="lit-{id}" cx="0.35" cy="0.35" r="0.8">
-      <stop offset="0" stop-color="var(--gold-hi)" />
-      <stop offset="0.6" stop-color="var(--moon-gold)" />
-      <stop offset="1" stop-color="var(--gold-mid)" />
+      <stop offset="0" style="stop-color: var(--gold-knot-hi)"></stop>
+      <stop offset="0.6" style="stop-color: var(--dc1-accent-bright)"></stop>
+      <stop offset="1" style="stop-color: var(--dc1-accent)"></stop>
     </radialGradient>
-    <filter id="glow-{id}" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="0.12" />
-    </filter>
   </defs>
-  <circle r="1.08" fill="var(--moon-gold)" opacity={0.18 + lit * 0.3} filter="url(#glow-{id})" />
-  <circle r="1" fill="var(--cloud)" />
-  <path class="lit" d={moonPath(lit)} fill="url(#lit-{id})" />
+  <circle r="1" style="fill: var(--footer); stroke: var(--frame)" stroke-width="0.06"></circle>
+  <path class="lit" d={moonPath(lit)} fill="url(#lit-{id})"></path>
 </svg>
 
 <style>
-  .moon {
+  svg {
     display: block;
     flex: none;
   }

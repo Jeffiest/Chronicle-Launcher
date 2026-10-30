@@ -1,23 +1,22 @@
-<!-- Set up from your disc: find it in a folder, then the port's extractor makes the game's data from it while the
-     gold moon waxes. -->
+<!-- Your disc: found in a folder, then made into the game's data by the port's own extractor, while Dark Cloud's
+     gold moon waxes or Dark Chronicle's gold ring fills. -->
 <script lang="ts">
   import Moon from "./Moon.svelte";
+  import Ring from "./Ring.svelte";
   import { api } from "../lib/api";
   import { fileName } from "../lib/format";
   import { attempt, replace, store } from "../lib/store.svelte";
   import type { GameView, Scan } from "../lib/types";
 
   let { view }: { view: GameView } = $props();
-
-  let folder: string | null = $state(null);
-  let scan: Scan | null = $state(null);
+  let folder = $state<string | null>(null);
+  let scan = $state<Scan | null>(null);
   let looking = $state(false);
 
   const game = $derived(view.game);
   const activity = $derived(view.activity);
   const lines = $derived(store.lines[game.id] ?? []);
 
-  // Look again where the player last looked, once, when the page opens.
   $effect(() => {
     const remembered = view.disc_folder;
     if (remembered && scan === null && !looking) {
@@ -44,15 +43,19 @@
   }
 </script>
 
-<section class="stone panel rise" id="disc">
+<section class="window rise" id="disc">
   {#if activity.kind === "setting-up"}
+    <h2 class="window-title">Setting up</h2>
+    <div class="rule"></div>
     <div class="progress">
-      <Moon lit={activity.fraction} label="Setting up" />
+      {#if game.chapter === 1}
+        <Moon lit={activity.fraction} size={96} label="Setting up" />
+      {:else}
+        <Ring lit={activity.fraction} size={120} label="Setting up" />
+      {/if}
       <div>
-        <h2 class="gold-text">Setting up {game.title}</h2>
-        <p class="stage">{activity.doing}…</p>
-        <p class="soft">This reads the whole disc once. It can take a few minutes.</p>
-        <button class="removes" onclick={() => attempt(() => api.cancelSetUp(game.id))}>Cancel</button>
+        <p class="percent">{Math.round(activity.fraction * 100)}%</p>
+        <p class="doing">{activity.doing}</p>
       </div>
     </div>
     {#if lines.length}
@@ -61,36 +64,30 @@
         <pre>{lines.slice(-40).join("\n")}</pre>
       </details>
     {/if}
-  {:else}
-    <h2 class="gold-text">Your disc</h2>
-    <p class="soft">
-      Your own {game.discs.map((d) => d.region).join(" or ")} disc image of {game.title}, as an
-      <code>.iso</code>. The launcher looks in the folder you choose and two folders down. Nothing is
-      downloaded.
-    </p>
-    <div class="row">
-      <button onclick={pick}>{folder ? "Look in another folder" : "Choose a folder"}</button>
-      {#if folder}<span class="where mono">{folder}</span>{/if}
+    <div class="footer">
+      <button class="key" onclick={() => attempt(() => api.cancelSetUp(game.id))}>Cancel</button>
+      <span>It reads the whole disc once</span>
     </div>
-
+  {:else}
+    <h2 class="window-title">Your disc</h2>
+    <div class="rule"></div>
+    <p class="say">
+      Your own {game.discs.map((d) => d.region).join(" or ")} disc image of {game.title}, as an .iso.
+    </p>
     {#if looking}
-      <p class="soft">Looking…</p>
+      <p class="say">Looking…</p>
     {:else if scan}
-      {#if scan.discs.length === 0}
-        <p class="state warn">No {game.title} disc image in this folder.</p>
-      {/if}
-      <ul class="found">
-        {#each scan.discs as disc (disc.path)}
+      <ul class="rows">
+        {#each scan.discs as disc, i (disc.path)}
           <li>
-            <div>
-              <strong>{fileName(disc.path)}</strong>
-              <p class="soft">
-                {disc.release}
-              </p>
-            </div>
-            <button class="primary" onclick={() => begin(disc.path)}>Set up from this disc</button>
+            <button class="row" class:chosen={i === 0} onclick={() => begin(disc.path)}>
+              <span class="grow">{fileName(disc.path)}</span><span class="release">{disc.release}</span>
+            </button>
           </li>
         {/each}
+        {#if scan.discs.length === 0}
+          <li class="row faint">No {game.title} disc image here</li>
+        {/if}
       </ul>
       {#if scan.skipped.length}
         <details class="skipped">
@@ -103,85 +100,78 @@
         </details>
       {/if}
     {/if}
+    <div class="footer">
+      <button class="key" onclick={pick}>{folder ? "Look elsewhere" : "Choose a folder"}</button>
+      <span>{scan?.discs.length ? "Enter on a disc to set it up" : "Looks two folders down"}</span>
+    </div>
   {/if}
 </section>
 
 <style>
-  .panel {
-    padding: 20px 24px;
-    display: grid;
-    gap: 12px;
+  .say {
+    padding: 12px 18px 2px;
+    font-size: calc(16px * var(--game-size));
+    line-height: 1.5;
+    color: var(--text-soft);
   }
-  h2 {
-    font-size: 22px;
-  }
-  .soft {
-    color: var(--on-stone-soft);
-    font-size: 14px;
-  }
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-  }
-  .where {
-    color: var(--on-stone-dim);
-    overflow-wrap: anywhere;
-  }
-  .found {
+  .rows li {
     list-style: none;
-    margin: 0;
-    padding: 0;
   }
-  .found li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 0;
-    border-top: 1px solid var(--stone-lo);
+  .rows button.row {
+    width: 100%;
+    border: 0;
+    background: none;
+    text-align: left;
   }
-  .found strong {
-    font-family: var(--font-game);
-    font-size: 16px;
+  .rows button.row.chosen {
+    background: var(--select);
+  }
+  .grow {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .release {
+    font-size: 0.8em;
+    color: var(--text-soft);
   }
   .progress {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
+    padding: 16px 18px;
   }
-  .progress > div {
-    display: grid;
-    gap: 6px;
-    justify-items: start;
+  .percent {
+    font-family: var(--font-title);
+    font-size: 40px;
+    line-height: 1;
+    color: var(--title);
   }
-  .stage {
-    font-family: var(--font-game);
-    font-size: 17px;
-    color: var(--gold-hi);
+  .doing {
+    margin-top: 6px;
+    font-size: calc(16px * var(--game-size));
+    color: var(--accent);
   }
-  details summary {
+  details {
+    padding: 0 18px 10px;
+    font-size: calc(14px * var(--game-size));
+    color: var(--text-soft);
+  }
+  summary {
     cursor: pointer;
-    color: var(--on-stone-soft);
   }
-  .output pre {
-    margin: 8px 0 0;
-    max-height: 240px;
+  pre {
+    max-height: 160px;
     overflow: auto;
-    padding: 10px 12px;
-    border-radius: var(--radius-plate);
-    background: var(--stone-rim);
-    color: var(--on-stone-soft);
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    background: var(--frame-dark);
     font: 12px/1.45 var(--font-mono);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
   .skipped ul {
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     padding-left: 18px;
-    color: var(--on-stone-soft);
-    font-size: 13px;
   }
 </style>

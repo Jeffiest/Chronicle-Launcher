@@ -30,5 +30,17 @@
     }
   ],
   "progress": "stages",
-  "saves": "dark-cloud"
+  "saves": "dark-cloud",
+  "scene_args": [
+    "--headless",
+    "--jump",
+    "e01",
+    "--fast-load",
+    "--width",
+    "1920",
+    "--height",
+    "1080",
+    "--frames",
+    "480"
+  ]
 }

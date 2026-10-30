@@ -14,10 +14,6 @@ page says the one next step: **Get the game**, **Set up from your disc**, **Play
 
 Nothing from the games is included or downloaded. You supply your own disc.
 
-| The Chronicle                                          | A chapter                                                             |
-| ------------------------------------------------------ | --------------------------------------------------------------------- |
-| ![The two chapters' covers](docs/screenshots/home.png) | ![Dark Cloud's page, with its steps](docs/screenshots/dark-cloud.png) |
-
 ## Where it stands
 
 Both games go from **Get the game** to **Set up from your disc** to **Play**, with Moon Factory for their mods:
@@ -41,12 +37,18 @@ Both games go from **Get the game** to **Set up from your disc** to **Play**, wi
   shows what it is before installing it. The **Mods** switch beside Play is off by default: the game then starts
   with `MOONMOD_NO_MODS=1`, which needs MoonMod's `launcher-no-mods` change in the build.
 
+Each game's page looks like the game's own menus (the window, its frame, the brown bar of the chosen row, the
+control hints), over a frame of the game itself: after set-up the launcher has the port render one from the
+player's own data (`core/src/scene.rs`), or the player picks a screenshot of their own (**Use my screenshot**). The
+launcher holds no picture of either game. Until there is one, Dark Chronicle shows its Options backdrop of leather and
+gold lines, drawn by the launcher.
+
 Every step has been run end to end with stand-ins for the ports' programs (`core/tests/flow.rs`, and the app
 itself on a virtual display), not yet with a real disc.
 
-| Setting up Dark Chronicle                                                                       | Dark Cloud, after a crash                                                               |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| ![The gold moon waxing with dc2data's progress](docs/screenshots/dark-chronicle-setting-up.png) | ![Dark Cloud's page with a crash notice and its saves](docs/screenshots/dark-cloud.png) |
+| Dark Cloud, before a build is chosen                                                                 | Dark Chronicle, its disc found                                                                                |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| ![Dark Cloud's page: the in-game menu window offering Get the game](docs/screenshots/dark-cloud.png) | ![Dark Chronicle's page on its leather and gold backdrop, with its disc](docs/screenshots/dark-chronicle.png) |
 
 ## Building
 

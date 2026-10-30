@@ -7,7 +7,7 @@
 //! - `game-ended` (`{ id, outcome }`).
 
 use chronicle_launcher_core::library::{self, Activity, GameView};
-use chronicle_launcher_core::{discs, games, mods, paths, play, process, saves, setup};
+use chronicle_launcher_core::{discs, games, mods, paths, play, process, saves, scene, setup};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -42,6 +42,9 @@ impl Runs {
             Activity::Idle => Ok(()),
             Activity::Playing => Err("The game is running. Close it first.".into()),
             Activity::SettingUp { .. } => Err("The game is being set up. Wait for it, or cancel it.".into()),
+            Activity::Rendering => {
+                Err("The launcher is taking a picture of the game. It takes a moment.".into())
+            }
         }
     }
 }
@@ -182,11 +185,95 @@ fn set_up(app: AppHandle, runs: State<Runs>, id: String, disc: PathBuf) -> Resul
                 message: format!("Set-up failed: {e}"),
             },
         };
+        let set_up = finished.ok;
         runs.0.lock().unwrap().remove(&id);
         let _ = app.emit("setup-finished", finished);
         announce(&app, &id);
+        // The first backdrop: a frame of the game the player just set up.
+        if set_up {
+            let _ = start_scene(&app, &id);
+        }
     });
     view(&runs, &current.game.id)
+}
+
+#[derive(Clone, Serialize)]
+struct SceneReady {
+    id: String,
+    ok: bool,
+    message: String,
+}
+
+/// Renders the page's backdrop with the port, on a thread; `scene-ready` says how it went.
+fn start_scene(app: &AppHandle, id: &str) -> Result<(), String> {
+    let runs = app.state::<Runs>();
+    runs.busy(id)?;
+    let game = game(id)?;
+    let current = library::view_of(&root(), id)?;
+    let build = current.build.ok_or("Choose a build first.")?;
+    if current.set_up.is_none() {
+        return Err("Set the game up from your disc first.".into());
+    }
+    let dirs = paths::game_dirs(&root(), id);
+    let out = scene::pending(&dirs);
+    let _ = std::fs::remove_file(&out);
+    let child = process::spawn(scene::command(game, &build, &dirs, &out))
+        .map_err(|e| format!("{} could not start: {e}", build.executable.display()))?;
+    let child = Arc::new(Mutex::new(child));
+    runs.0.lock().unwrap().insert(
+        id.to_string(),
+        Run {
+            child: child.clone(),
+            activity: Activity::Rendering,
+        },
+    );
+    announce(app, id);
+    let (app, id) = (app.clone(), id.to_string());
+    std::thread::spawn(move || {
+        let log = dirs.logs.join(format!("scene-{}.log", saves::now()));
+        let ended = process::follow(&child, &log, |_| {});
+        let result = match ended {
+            Ok(ended) if ended.success() => scene::adopt(&dirs, &out),
+            Ok(_) => Err("The game did not finish its picture; the log says why.".into()),
+            Err(e) => Err(e.to_string()),
+        };
+        let _ = std::fs::remove_file(&out);
+        app.state::<Runs>().0.lock().unwrap().remove(&id);
+        let ready = match result {
+            Ok(()) => SceneReady {
+                id: id.clone(),
+                ok: true,
+                message: "New background taken.".into(),
+            },
+            Err(e) => SceneReady {
+                id: id.clone(),
+                ok: false,
+                message: e,
+            },
+        };
+        let _ = app.emit("scene-ready", ready);
+        announce(&app, &id);
+    });
+    Ok(())
+}
+
+/// The page's backdrop as a `data:` URL, or nothing yet.
+#[tauri::command]
+fn scene_image(id: String) -> Result<Option<String>, String> {
+    game(&id)?;
+    Ok(scene::data_url(&paths::game_dirs(&root(), &id)))
+}
+
+#[tauri::command]
+fn render_scene(app: AppHandle, id: String) -> Result<(), String> {
+    start_scene(&app, &id)
+}
+
+/// Makes the player's own picture the backdrop.
+#[tauri::command]
+fn use_scene(id: String, picture: PathBuf) -> Result<(), String> {
+    game(&id)?;
+    scene::adopt(&paths::game_dirs(&root(), &id), &picture)
 }
 
 #[tauri::command]
@@ -498,6 +585,9 @@ pub fn run() {
             install_mod,
             discard_mod,
             remove_mod,
+            scene_image,
+            render_scene,
+            use_scene,
         ])
         .run(tauri::generate_context!())
         .expect("the launcher's window could not start");

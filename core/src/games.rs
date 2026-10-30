@@ -43,6 +43,9 @@ pub struct Game {
     /// Boot programs of this game's other releases, each with why the launcher turns it away.
     #[serde(default)]
     pub refused_boots: std::collections::BTreeMap<String, String>,
+    /// How the port renders the page's backdrop from the player's own data (see `scene.rs`).
+    #[serde(default)]
+    pub scene_args: Vec<String>,
     #[serde(default)]
     pub progress: Progress,
     #[serde(default)]

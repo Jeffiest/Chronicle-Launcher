@@ -19,5 +19,6 @@
     "SCUS_972.13": "Dark Cloud 2, the NTSC release: the launcher sets up the PAL disc only"
   },
   "progress": "percent",
-  "saves": "dark-chronicle"
+  "saves": "dark-chronicle",
+  "scene_args": ["--headless", "--jump", "town:10", "--fast-load", "--window", "1920x1080", "--frames", "600"]
 }

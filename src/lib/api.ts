@@ -42,6 +42,12 @@ export interface Api {
   installMod(id: string): Promise<string>;
   discardMod(id: string): Promise<void>;
   removeMod(id: string, folder: string): Promise<void>;
+  /** The page's backdrop (a `data:` URL), or null before there is one. */
+  sceneImage(id: string): Promise<string | null>;
+  /** Renders a new backdrop with the port; `scene-ready` says how it went. */
+  renderScene(id: string): Promise<void>;
+  /** Asks for a picture and makes it the backdrop. False when cancelled. */
+  pickScene(id: string): Promise<boolean>;
   openLink(url: string): Promise<void>;
   on<K extends keyof Events>(event: K, listener: Listener<K>): Promise<() => void>;
 }
@@ -91,6 +97,18 @@ const app: Api = {
   installMod: (id) => call("install_mod", { id }),
   discardMod: (id) => call("discard_mod", { id }),
   removeMod: (id, folder) => call("remove_mod", { id, folder }),
+  sceneImage: (id) => call("scene_image", { id }),
+  renderScene: (id) => call("render_scene", { id }),
+  async pickScene(id) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const picture = await open({
+      title: "Choose a screenshot of the game",
+      filters: [{ name: "Picture", extensions: ["png", "jpg", "jpeg", "webp"] }],
+    });
+    if (typeof picture !== "string") return false;
+    await call("use_scene", { id, picture });
+    return true;
+  },
   async openLink(url) {
     const { openUrl } = await import("@tauri-apps/plugin-opener");
     await openUrl(url);
@@ -405,6 +423,22 @@ export function mockApi(tick = 700): Api {
       return "author.weather";
     },
     async discardMod() {},
+    // A preview can show a backdrop kept in this browser's storage under chronicle-launcher.mock-scene.<id>; the
+    // repository holds no picture of either game.
+    async sceneImage(id) {
+      try {
+        return localStorage.getItem(`chronicle-launcher.mock-scene.${id}`);
+      } catch {
+        return null;
+      }
+    },
+    async renderScene(id) {
+      setTimeout(
+        () => emit("scene-ready", { id, ok: false, message: "The browser preview cannot run the game." }),
+        tick,
+      );
+    },
+    pickScene: async () => false,
     async removeMod(_id, folder) {
       mods.splice(
         mods.findIndex((m) => m.folder === folder),

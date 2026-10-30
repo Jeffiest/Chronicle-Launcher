@@ -12,4 +12,5 @@ pub mod play;
 pub mod port;
 pub mod process;
 pub mod saves;
+pub mod scene;
 pub mod setup;

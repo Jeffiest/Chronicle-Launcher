@@ -22,6 +22,8 @@ pub enum Activity {
     Idle,
     SettingUp(setup::Progress),
     Playing,
+    /// Rendering the page's backdrop from the player's data (`scene.rs`).
+    Rendering,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

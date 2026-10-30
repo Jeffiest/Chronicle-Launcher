@@ -17,7 +17,13 @@ export const store = $state({
   lines: {} as Record<string, string[]>,
   toasts: [] as Toast[],
   savesChanged: 0,
+  scenes: {} as Record<string, string | null>,
 });
+
+/** Fetches a game's backdrop again (after set-up, a new picture, or the player's own). */
+export async function loadScene(id: string) {
+  store.scenes[id] = (await attempt(() => api.sceneImage(id))) ?? null;
+}
 
 let next = 1;
 
@@ -58,6 +64,10 @@ export async function start() {
     store.lines[id] = lines.slice(-LINES);
   });
   await api.on("setup-finished", ({ ok, message }) => toast(message, ok ? "ok" : "err"));
+  await api.on("scene-ready", ({ id, ok, message }) => {
+    toast(message, ok ? "ok" : "err");
+    if (ok) loadScene(id);
+  });
   await api.on("game-ended", ({ id, outcome }) => {
     store.savesChanged++;
     const title = store.views.find((v) => v.game.id === id)?.game.title ?? "The game";

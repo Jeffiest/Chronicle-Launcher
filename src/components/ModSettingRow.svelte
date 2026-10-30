@@ -1,5 +1,5 @@
-<!-- One of a mod's settings, as its manifest types it: a switch, a few choices side by side or a list, a slider with
-     its number when both ends are known, or a field. It saves as it changes, and has a Reset off its default. -->
+<!-- One of a mod's settings, as the in-game Mod Manager draws it: its name, and ON / OFF, a strip of choices, a bar
+     with its number, or a field. It saves as it changes; off its default, a Reset. -->
 <script lang="ts">
   import type { ModSetting } from "../lib/types";
 
@@ -12,7 +12,6 @@
   const changed = $derived(JSON.stringify(setting.value) !== JSON.stringify(setting.default));
   const numeric = $derived(setting.type === "integer" || setting.type === "number");
   const step = $derived(setting.step ?? (setting.type === "integer" ? 1 : 0.1));
-  const slider = $derived(numeric && setting.min !== null && setting.max !== null);
 
   function number(text: string) {
     const value = setting.type === "integer" ? Math.round(Number(text)) : Number(text);
@@ -21,32 +20,21 @@
 </script>
 
 <div class="setting">
-  <div>
-    <label class="name" for="setting-{setting.id}">{setting.name}</label>
-    {#if setting.description}<p class="line">{setting.description}</p>{/if}
-  </div>
+  <label for="setting-{setting.id}" class:changed>{setting.name}</label>
   <div class="control">
     {#if setting.type === "boolean"}
-      <input
-        id="setting-{setting.id}"
-        class="switch"
-        type="checkbox"
-        checked={setting.value === true}
-        {disabled}
-        onchange={(e) => onChange(e.currentTarget.checked)}
-      />
-    {:else if setting.type === "choice" && setting.choices.length <= 3}
-      <div class="segmented" role="radiogroup" aria-label={setting.name}>
+      <span class="choice" id="setting-{setting.id}">
+        <button aria-pressed={setting.value === true} {disabled} onclick={() => onChange(true)}>On</button>
+        <button aria-pressed={setting.value !== true} {disabled} onclick={() => onChange(false)}>Off</button>
+      </span>
+    {:else if setting.type === "choice" && setting.choices.length <= 4}
+      <span class="choice" id="setting-{setting.id}">
         {#each setting.choices as choice (choice)}
-          <button
-            role="radio"
-            aria-checked={setting.value === choice}
-            class:on={setting.value === choice}
-            {disabled}
-            onclick={() => onChange(choice)}>{choice}</button
+          <button aria-pressed={setting.value === choice} {disabled} onclick={() => onChange(choice)}
+            >{choice}</button
           >
         {/each}
-      </div>
+      </span>
     {:else if setting.type === "choice"}
       <select
         id="setting-{setting.id}"
@@ -57,9 +45,9 @@
         {#each setting.choices as choice (choice)}<option>{choice}</option>{/each}
       </select>
     {:else if numeric}
-      {#if slider}
+      {#if setting.min !== null && setting.max !== null}
         <input
-          class="slider"
+          class="bar"
           type="range"
           aria-label={setting.name}
           min={setting.min}
@@ -92,59 +80,49 @@
         onchange={(e) => onChange(e.currentTarget.value)}
       />
     {/if}
-    {#if changed}
-      <button class="link reset" {disabled} onclick={() => onChange(null)}>Reset</button>
-    {/if}
+    {#if changed}<button class="link" {disabled} onclick={() => onChange(null)}>Reset</button>{/if}
   </div>
+  {#if setting.description}<p class="line">{setting.description}</p>{/if}
 </div>
 
 <style>
-  .name {
+  .setting {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 16px;
+    align-items: center;
+    padding: 8px 0;
+    box-shadow: inset 0 -2px 0 var(--frame);
     font-family: var(--font-game);
-    font-size: 16px;
+    font-size: calc(17px * var(--game-size));
   }
-  .line {
-    color: var(--on-stone-soft);
-    font-size: 13px;
+  label.changed {
+    color: var(--accent);
   }
   .control {
     display: flex;
     align-items: center;
-    gap: 12px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    gap: 10px;
   }
-  .segmented {
-    display: flex;
-    gap: 6px;
-  }
-  .segmented button {
-    text-transform: capitalize;
-  }
-  .segmented button.on {
-    --face: var(--amber);
-    --face-hi: var(--amber-hi);
-    --rim: var(--amber-rim);
-    color: var(--amber-ink);
-    text-shadow: 0 1px 0 var(--amber-light);
+  .line {
+    grid-column: 1 / -1;
+    font-size: 0.82em;
+    color: var(--text-dim);
   }
   .field,
   select {
+    padding: 3px 8px;
+    border: 0;
+    background: var(--frame-dark);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    color: var(--text);
     font: inherit;
-    color: var(--on-stone);
-    background: var(--stone-rim);
-    border: 1px solid var(--stone-lo);
-    border-radius: var(--radius-plate);
-    padding: 7px 10px;
   }
   .number {
-    width: 92px;
+    width: 80px;
   }
-  .slider {
-    width: 180px;
-    accent-color: var(--amber);
-  }
-  .reset {
-    font-size: 13px;
+  .bar {
+    width: 150px;
+    accent-color: var(--accent);
   }
 </style>

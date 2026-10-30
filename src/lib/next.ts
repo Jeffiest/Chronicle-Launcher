@@ -10,6 +10,7 @@ export interface State {
 export function stateOf(view: GameView): State {
   if (view.activity.kind === "setting-up") return { words: "Setting up", tone: "warn" };
   if (view.activity.kind === "playing") return { words: "Playing", tone: "ok" };
+  if (view.activity.kind === "rendering") return { words: "Taking a picture of the game", tone: "warn" };
   if (view.build_problem) return { words: "Its build has moved", tone: "err" };
   switch (view.next) {
     case "get-the-game":
@@ -27,6 +28,7 @@ export function stateOf(view: GameView): State {
 export function mainButton(view: GameView): string {
   if (view.activity.kind === "setting-up") return "Setting up…";
   if (view.activity.kind === "playing") return "Playing";
+  if (view.activity.kind === "rendering") return "Play";
   switch (view.next) {
     case "get-the-game":
       return "Get the game";
